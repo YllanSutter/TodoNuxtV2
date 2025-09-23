@@ -2,6 +2,6 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@prisma/nuxt', '@nuxtjs/tailwindcss'],
-  css: ['~/assets/css/main.css']
+  modules: ['shadcn-nuxt','@prisma/nuxt','@nuxtjs/tailwindcss'],
+  css: ['~/assets/css/main.css'],
 })
