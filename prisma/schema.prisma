@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Group {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  color       String      @default("#6366f1") // Default indigo color
+  order       Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  subgroups   Subgroup[]
+  
+  @@map("groups")
+}
+
+model Subgroup {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  color       String    @default("#8b5cf6") // Default violet color
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  groupId     String
+  group       Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  projects    Project[]
+  
+  @@map("subgroups")
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  color       String    @default("#10b981") // Default emerald color
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  subgroupId  String
+  subgroup    Subgroup  @relation(fields: [subgroupId], references: [id], onDelete: Cascade)
+  
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  
+  todos       Todo[]
+  projectTags ProjectTag[]
+  
+  @@map("projects")
+}
+
+model Todo {
+  id          String    @id @default(cuid())
+  content     String
+  type        TodoType  @default(TASK)
+  completed   Boolean   @default(false)
+  order       Int       @default(0)
+  level       Int       @default(0) // Indentation level
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  parentId    String?
+  parent      Todo?     @relation("TodoHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Todo[]    @relation("TodoHierarchy")
+  
+  @@map("todos")
+}
+
+model Tag {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  color       String      @default("#6366f1")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  projectTags ProjectTag[]
+  
+  @@map("tags")
+}
+
+model ProjectTag {
+  id        String  @id @default(cuid())
+  projectId String
+  tagId     String
+  
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, tagId])
+  @@map("project_tags")
+}
+
+model Template {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  items       TemplateItem[]
+  projects    Project[]
+  
+  @@map("templates")
+}
+
+model TemplateItem {
+  id          String      @id @default(cuid())
+  content     String
+  type        TodoType    @default(TASK)
+  order       Int         @default(0)
+  level       Int         @default(0)
+  
+  templateId  String
+  template    Template    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  parentId    String?
+  parent      TemplateItem? @relation("TemplateHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    TemplateItem[] @relation("TemplateHierarchy")
+  
+  @@map("template_items")
+}
+
+model AppState {
+  id              String    @id @default("singleton")
+  lastGroupId     String?
+  lastSubgroupId  String?
+  lastProjectId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("app_state")
+}
+
+enum TodoType {
+  TASK
+  TITLE
+  NOTE
+}
