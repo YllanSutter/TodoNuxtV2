@@ -30,7 +30,7 @@ function ChangeItem(item) {
       nextType = 'project'
       break
     default:
-      nextType = 'task' 
+      nextType = 'todo' 
   }
   
   emit('itemClick', {

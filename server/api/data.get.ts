@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
     
     if (parentId && parentFieldMap[type as string]) {
       const parentField = parentFieldMap[type as string]
-      whereClause[parentField] = parseInt(parentId as string) || parentId
+      whereClause[parentField] = parentId
     }
     
     const data = await model.findMany({

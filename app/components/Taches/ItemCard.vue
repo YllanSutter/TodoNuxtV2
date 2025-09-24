@@ -26,7 +26,7 @@ function ChangeItem(item){
       nextType = 'project'
       break
     default:
-      nextType = 'task' // ou autre selon votre structure
+      nextType = 'todo' // ou autre selon votre structure
   }
   
   emit('itemClick', {

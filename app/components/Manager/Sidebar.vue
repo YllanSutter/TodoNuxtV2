@@ -7,6 +7,10 @@ const props = defineProps({
   selectedType: {
     type: String,
     default: null
+  },
+  selectedParentId: {
+    type: [String, Number],
+    default: null
   }
 })
 
@@ -15,6 +19,10 @@ const emit = defineEmits(['itemSelect'])
 function handleItemSelect(payload) {
   emit('itemSelect', payload)
 }
+
+function handleNavigate(payload) {
+  emit('itemSelect', payload);
+}
 </script>
 
 <template>
@@ -22,15 +30,12 @@ function handleItemSelect(payload) {
         <h2 class="p-4 border-b border-white/10">Project Manager</h2>
         <div class="p-4 grid gap-4">
             <div>
-                <h3 class="text-sm opacity-70 mb-2">Actions rapides</h3>
-            </div>
-            
-            <div>
                 <h3 class="text-sm opacity-70 mb-2">Hiérarchie complète</h3>
-                <ManagerHierarchicalTree 
+                <NavigationBreadcrumb 
+                  mode="vertical"
                   :selectedItemId="selectedItemId"
                   :selectedType="selectedType"
-                  @itemSelect="handleItemSelect"
+                  @navigate="handleNavigate"
                 />
             </div>
         </div>
