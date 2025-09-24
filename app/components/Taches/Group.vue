@@ -1,4 +1,5 @@
 <script setup>
+
 // Props pour choisir le type de données à afficher
 const props = defineProps({
   type: {
@@ -38,6 +39,14 @@ function handleItemClick(payload) {
   emit('navigate', payload)
 }
 
+// Gestionnaire de mise à jour des todos
+function handleTodoUpdate(updatedTodo) {
+  const index = items.value.findIndex(item => item.id === updatedTodo.id)
+  if (index !== -1) {
+    items.value[index] = { ...items.value[index], ...updatedTodo }
+  }
+}
+
 onMounted(() => {
   loadData()
 })
@@ -72,12 +81,12 @@ watch([() => props.type, () => props.parentId], () => {
       </div>
 
       <div v-else-if="type == 'todo'" class="mt-10">
-        <div v-for="item in items" :class="`pl-${2 * item.level}`">
-          <input v-if="item.type == 'TASK'" type="checkbox" class="mr-2" :id="item.id" :checked="item.completed ? 'checked' : false"></input>
-          <input type="text" :value="item.content" /></input>
-        </div>
-        <TachesAddElem :type="props.type" :parentId="props.parentId"/>
-        
+        <TachesTodoContainer
+          :items="items" 
+          :parent-id="props.parentId"
+          @update="handleTodoUpdate"
+          @refresh="loadData"
+        />
       </div>
 
       <div v-else>
