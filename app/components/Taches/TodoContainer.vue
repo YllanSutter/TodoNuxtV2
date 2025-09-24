@@ -5,7 +5,7 @@
     <!-- Liste des todos -->
     <div 
       ref="todoListRef"
-      class="todo-list gap-2 grid items-start content-start relative mb-4"
+      class="todo-list  grid items-start content-start relative mb-4"
       @click="handleContainerClick"
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
@@ -212,16 +212,20 @@ function handleMouseMove(event) {
   const currentX = event.clientX - rect.left
   const currentY = event.clientY - rect.top
   
-  // Calculer la distance pour déterminer si c'est un vrai drag
-  const distance = Math.sqrt(
-    Math.pow(currentX - selectionBox.value.startX, 2) + 
-    Math.pow(currentY - selectionBox.value.startY, 2)
-  )
+  // Calculer le mouvement vertical et horizontal séparément
+  const verticalMovement = Math.abs(currentY - selectionBox.value.startY)
+  const horizontalMovement = Math.abs(currentX - selectionBox.value.startX)
   
-  // Si on a commencé sur un input, il faut plus de mouvement pour déclencher la sélection
-  const threshold = dragStartedOnInput.value ? 15 : 5
+  // Estimer la hauteur d'une tâche (approximativement 40px avec padding)
+  const taskHeight = 30
   
-  if (distance > threshold) {
+  // Conditions pour déclencher la sélection :
+  // 1. Mouvement vertical d'au moins une tâche de hauteur
+  // 2. Le mouvement vertical doit être dominant par rapport au mouvement horizontal
+  const minVerticalThreshold = taskHeight
+  const isVerticalMovementDominant = verticalMovement > horizontalMovement * 0.5
+  
+  if (verticalMovement > minVerticalThreshold && isVerticalMovementDominant) {
     // Si on a commencé sur un input, on perd le focus pour permettre la sélection
     if (dragStartedOnInput.value && document.activeElement && document.activeElement.tagName === 'INPUT') {
       document.activeElement.blur()
