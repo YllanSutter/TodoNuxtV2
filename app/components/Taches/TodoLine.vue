@@ -2,7 +2,7 @@
   <div 
     ref="lineRef"
     :class="[
-      'todo-line flex items-center gap-2 py-1 px-2 rounded transition-colors hover:bg-white/5',
+      'todo-line group flex items-center gap-2 py-1 px-2 rounded transition-colors hover:bg-white/5',
       isSelected ? 'bg-white/5' : '',
       isDragging ? 'opacity-50' : '',
       dropPosition === 'before' ? 'border-t-2 border-blue-400' : '',
@@ -12,6 +12,7 @@
     :style="{ paddingLeft: `${(item.level || 0) * 10}px` }"
     :draggable="isDragEnabled"
     @dragstart="handleDragStart"
+    @dragend="handleDragEnd"
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"
     @drop="handleDrop"
@@ -323,10 +324,12 @@ function handleDragHandleMouseDown(event) {
   event.stopPropagation()
   isDragEnabled.value = true
   
-  // Désactiver le drag après un court délai si pas de dragstart
+  // Désactiver le drag après un délai plus long si pas de dragstart
   setTimeout(() => {
-    isDragEnabled.value = false
-  }, 100)
+    if (!isDragging.value) {
+      isDragEnabled.value = false
+    }
+  }, 1000)
 }
 
 function copyToClipboard() {
@@ -387,6 +390,11 @@ function handleDragStart(event) {
     type: props.item.type
   }))
   event.dataTransfer.effectAllowed = 'move'
+}
+
+function handleDragEnd(event) {
+  isDragging.value = false
+  isDragEnabled.value = false
 }
 
 function handleDragOver(event) {

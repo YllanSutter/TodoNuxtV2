@@ -422,6 +422,28 @@ async function confirmDeleteSelectedItems() {
   }
 }
 
+function findChildrenItems(parentItem, items) {
+  const children = []
+  const parentLevel = parentItem.level || 0
+  const parentIndex = items.findIndex(item => item.id === parentItem.id)
+  
+  // Parcourir les items après le parent pour trouver ses enfants
+  for (let i = parentIndex + 1; i < items.length; i++) {
+    const currentItem = items[i]
+    const currentLevel = currentItem.level || 0
+    
+    // Si le niveau est inférieur ou égal au parent, on sort (fin des enfants)
+    if (currentLevel <= parentLevel) {
+      break
+    }
+    
+    // Si c'est un enfant direct ou indirect, l'ajouter
+    children.push(currentItem)
+  }
+  
+  return children
+}
+
 async function handleMove(moveData) {
   if (moveData.draggedItem && moveData.targetItem) {
     // Gestion du drag & drop
@@ -446,6 +468,11 @@ async function handleMove(moveData) {
           break
       }
       
+      // Trouver tous les enfants de l'élément déplacé
+      const draggedChildren = findChildrenItems(draggedItem, sortedItems.value)
+      const levelDifference = newLevel - (draggedItem.level || 0)
+      
+      // Déplacer l'élément parent
       await $fetch('/api/data/update', {
         method: 'PUT',
         body: {
@@ -457,6 +484,28 @@ async function handleMove(moveData) {
           }
         }
       })
+      
+      // Déplacer tous les enfants en conservant leur structure hiérarchique
+      if (draggedChildren.length > 0) {
+        const updatePromises = draggedChildren.map((child, index) => {
+          const childNewOrder = newOrder + 0.01 * (index + 1)
+          const childNewLevel = (child.level || 0) + levelDifference
+          
+          return $fetch('/api/data/update', {
+            method: 'PUT',
+            body: {
+              id: child.id,
+              type: 'todo',
+              data: {
+                order: childNewOrder,
+                level: childNewLevel
+              }
+            }
+          })
+        })
+        
+        await Promise.all(updatePromises)
+      }
       
       // Recalculer les ordres pour éviter les conflits
       await reorderItems()
