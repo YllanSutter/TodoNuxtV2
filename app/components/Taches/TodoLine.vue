@@ -2,14 +2,13 @@
   <div 
     ref="lineRef"
     :class="[
-      'todo-line group flex items-center gap-2 py-1 px-2 rounded transition-colors hover:bg-white/5',
+      'todo-line group flex items-center gap-2 px-2 rounded transition-colors hover:bg-white/5',
       isSelected ? 'bg-white/5' : '',
       isDragging ? 'opacity-50' : '',
       dropPosition === 'before' ? 'border-t-2 border-blue-400' : '',
       dropPosition === 'after' ? 'border-b-2 border-blue-400' : '',
       dropPosition === 'inside' ? '' : ''
     ]"
-    :style="{ paddingLeft: `${(item.level || 0) * 10}px` }"
     :draggable="isDragEnabled"
     @dragstart="handleDragStart"
     @dragend="handleDragEnd"
@@ -18,8 +17,16 @@
     @drop="handleDrop"
     @click="handleClick"
   >
+    <!-- Icône de déplacement -->
+    <div
+      class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 p-1 pr-2 rounded border-r border-white/5 -mr-[10px]"
+      title="Glisser pour déplacer"
+      @mousedown="handleDragHandleMouseDown"
+    >
+      <Icon name="material-symbols:drag-indicator" class="w-4 h-4" />
+    </div>
     <!-- Checkbox pour les tâches -->
-    <div v-if="item.type === 'TASK'" class="w-[15px]">
+    <div v-if="item.type === 'TASK'" class="w-[25px] border-l border-white/5 p-2 pr-0" :style="{ marginLeft: `${(item.level || 0) * 16}px` }">
       <div 
         @click="toggleCompleted"
         :class="[
@@ -47,6 +54,8 @@
       {{ item.type === 'TITLE' ? 'T' : 'N' }}
     </span>
 
+
+
     <!-- Input de contenu -->
     <input
       ref="contentInput"
@@ -68,19 +77,12 @@
 
     <!-- Actions -->
     <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-      <!-- Icône de déplacement -->
-      <div
-        class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 p-1 rounded"
-        title="Glisser pour déplacer"
-        @mousedown="handleDragHandleMouseDown"
-      >
-        <Icon name="material-symbols:drag-indicator" class="w-4 h-4" />
-      </div>
+      
       
       <!-- Bouton de suppression -->
       <button
         @click.stop="deleteItem"
-        class="text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 p-1 rounded"
+        class="hover:text-red-500 cursor-pointer transition-all duration-300"
         title="Supprimer"
       >
         <Icon name="material-symbols:delete-outline" class="w-4 h-4" />
@@ -478,12 +480,12 @@ defineExpose({
   transition: opacity 0.2s;
 }
 
-.drag-handle {
+.drag-handle span {
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.todo-line:hover .drag-handle {
+.todo-line:hover .drag-handle span {
   opacity: 1;
 }
 
