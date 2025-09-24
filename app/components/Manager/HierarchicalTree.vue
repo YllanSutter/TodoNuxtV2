@@ -135,7 +135,7 @@ onMounted(() => {
           @click="selectItem(group, 'group')"
           class="flex gap-2 items-center px-2 py-1 text-sm cursor-pointer hover:bg-white/5 rounded"
           :class="{
-            'text-violet-700 font-medium': selectedItemId == group.id && selectedType === 'group'
+            'bg-white/3 font-medium': selectedItemId == group.id && selectedType === 'group'
           }"
         >
           <div 
@@ -152,7 +152,7 @@ onMounted(() => {
             @click="selectItem(subgroup, 'subgroup')"
             class="flex gap-2 items-center px-2 py-1 text-sm cursor-pointer hover:bg-white/5 rounded"
             :class="{
-              'text-violet-700 font-medium': selectedItemId == subgroup.id && selectedType === 'subgroup'
+              'bg-white/3 font-medium': selectedItemId == subgroup.id && selectedType === 'subgroup'
             }"
           >
             <div 
@@ -169,7 +169,7 @@ onMounted(() => {
               @click="selectItem(project, 'project')"
               class="flex gap-2 items-center px-2 py-1 text-sm cursor-pointer hover:bg-white/5 rounded"
               :class="{
-                'text-violet-700 font-medium': selectedItemId == project.id && selectedType === 'project'
+                'bg-white/3 font-medium': selectedItemId == project.id && selectedType === 'project'
               }"
             >
               <div 

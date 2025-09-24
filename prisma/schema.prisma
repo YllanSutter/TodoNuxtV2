@@ -39,13 +39,14 @@ model Subgroup {
 }
 
 model Project {
-  id          String    @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   description String?
-  color       String    @default("#10b981") // Default emerald color
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  status      ProjectStatus @default(DRAFT)
+  color       String        @default("#10b981") // Default emerald color
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   
   subgroupId  String
   subgroup    Subgroup  @relation(fields: [subgroupId], references: [id], onDelete: Cascade)
@@ -148,4 +149,12 @@ enum TodoType {
   TASK
   TITLE
   NOTE
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
 }

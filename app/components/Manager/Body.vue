@@ -167,7 +167,8 @@ function handleNavigate(payload) {
   })
   
   currentType.value = payload.nextType
-  currentParentId.value = payload.parentId
+  // Le currentParentId devient l'ID de l'élément sur lequel on a cliqué
+  currentParentId.value = payload.item.id
   
   emit('sidebarSelect', {
     item: payload.item,
@@ -214,7 +215,6 @@ function goHome() {
                 </UiBreadcrumbLink>
                 <UiBreadcrumbSeparator v-if="navigationHistory.length > 0 || hierarchicalPath.length > 0" />
               </UiBreadcrumbItem>
-              
               <template v-if="navigationHistory.length > 0">
                 <UiBreadcrumbItem v-for="(nav, index) in navigationHistory" :key="'nav-' + index">
                   <UiBreadcrumbLink 
@@ -257,7 +257,6 @@ function goHome() {
             </UiBreadcrumbList>
           </UiBreadcrumb>
         </div>
-
         <TachesGroup 
           :type="currentType" 
           :parentId="currentParentId"

@@ -64,13 +64,11 @@ watch([() => props.type, () => props.parentId], () => {
             :type="type"
             @itemClick="handleItemClick"
           />
+          <TachesAddElem :type="props.type" :parentId="props.parentId"/>
         </div>
         
-        <UiCard v-else class="">
-          <UiCardContent class="text-center py-8">
-            <p class="">Aucun {{ type }} trouvé</p>
-          </UiCardContent>
-        </UiCard>
+        <TachesAddElem :type="props.type" :parentId="props.parentId" v-else/>
+        
       </div>
 
       <div v-else>
@@ -81,6 +79,7 @@ watch([() => props.type, () => props.parentId], () => {
             :type="type"
             @itemClick="handleItemClick"
           />
+          
         </div>
         <p v-else-if="error" class="text-red-500">{{ error }}</p>
         <p v-else class="text-gray-500">Aucun {{ type }} trouvé</p>
