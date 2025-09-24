@@ -39,7 +39,7 @@ function ChangeItem(item){
 </script>
 
 <template>
-  <UiCard @click="ChangeItem(item)">
+  <UiCard @click="ChangeItem(item)" class="transition-all duration-300 hover:bg-white/5 cursor-pointer">
     <UiCardHeader class="flex items-center gap-4">
       <div v-if="item.color" class="w-3 h-3 rounded-full" :style="{ backgroundColor: item.color }"></div>
       <UiCardTitle>{{ item.name || item.title || `${type} #${item.id}` }}</UiCardTitle>

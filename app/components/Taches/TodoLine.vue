@@ -9,7 +9,7 @@
       dropPosition === 'after' ? 'border-b-2 border-blue-400' : '',
       dropPosition === 'inside' ? '' : ''
     ]"
-    :style="{ paddingLeft: `${(item.level || 0) * 20 + 8}px` }"
+    :style="{ paddingLeft: `${(item.level || 0) * 10}px` }"
     :draggable="isDragEnabled"
     @dragstart="handleDragStart"
     @dragover="handleDragOver"
@@ -18,14 +18,21 @@
     @click="handleClick"
   >
     <!-- Checkbox pour les tâches -->
-    <input 
-      v-if="item.type === 'TASK'"
-      type="checkbox" 
-      :checked="item.completed"
-      @change="updateCompleted"
-      class="flex-shrink-0"
-      @click.stop
-    />
+    <div v-if="item.type === 'TASK'" class="w-[15px]">
+      <div 
+        @click="toggleCompleted"
+        :class="[
+          'w-4 h-4 rounded-full border-2 cursor-pointer transition-all duration-200 flex items-center justify-center',
+          item.completed ? 'bg-success border-success' : 'border-[#ffffff10] hover:border-success'
+        ]"
+      >
+        <Icon 
+          v-if="item.completed"
+          name="lucide:check" 
+          class="w-3 h-3 text-white animate-bounce-finite"
+        />
+      </div>
+    </div>
     
     <!-- Indicateur de type pour les autres types -->
     <span 
@@ -183,6 +190,11 @@ async function updateItem(data) {
 async function updateCompleted(event) {
   const completed = event.target.checked
   await updateItem({ completed })
+}
+
+async function toggleCompleted() {
+  const newCompleted = !props.item.completed
+  await updateItem({ completed: newCompleted })
 }
 
 function deleteItem() {
@@ -465,5 +477,19 @@ defineExpose({
 
 .todo-line:hover .drag-handle {
   opacity: 1;
+}
+
+/* Animation bounce subtile */
+@keyframes bounce-finite {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-bounce-finite {
+  animation: bounce-finite 0.3s ease-in-out;
 }
 </style>
