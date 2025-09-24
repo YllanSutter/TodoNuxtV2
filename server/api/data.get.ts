@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-  const { type = 'group' } = getQuery(event)
+  const { type = 'group', parentId } = getQuery(event)
   
   // Map des modèles disponibles
   const modelMap: Record<string, any> = {
@@ -18,6 +18,13 @@ export default defineEventHandler(async (event) => {
     appState: prisma.appState
   }
   
+  // Map des relations parent-enfant selon votre schéma
+  const parentFieldMap: Record<string, string> = {
+    subgroup: 'groupId',
+    project: 'subgroupId', // ou 'groupId' selon votre structure
+    todo: 'projectId'
+  }
+  
   try {
     const model = modelMap[type as string]
     
@@ -28,7 +35,18 @@ export default defineEventHandler(async (event) => {
       })
     }
     
-    const data = await model.findMany()
+    // Construire les conditions de filtrage
+    const whereClause: any = {}
+    
+    if (parentId && parentFieldMap[type as string]) {
+      const parentField = parentFieldMap[type as string]
+      whereClause[parentField] = parseInt(parentId as string) || parentId
+    }
+    
+    const data = await model.findMany({
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined
+    })
+    
     return data || []
   } catch (error: any) {
     if (error.statusCode === 400) {

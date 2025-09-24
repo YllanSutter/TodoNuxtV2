@@ -8,18 +8,43 @@ const props = defineProps({
   model: {
     type: String,
     default: 'group'
+  },
+  parentId: {
+    type: [String, Number],
+    default: null
   }
 })
+
+const emit = defineEmits(['navigate'])
 
 const items = ref([])
 const error = ref(null)
 
-onMounted(async () => {
+// Fonction pour charger les données
+async function loadData(type = props.type, parentId = props.parentId) {
   try {
-    items.value = await $fetch(`/api/data?type=${props.type}`)
+    let url = `/api/data?type=${type}`
+    if (parentId) {
+      url += `&parentId=${parentId}`
+    }
+    items.value = await $fetch(url)
   } catch (e) {
     error.value = e
   }
+}
+
+// Gestionnaire de clic sur un item
+function handleItemClick(payload) {
+  emit('navigate', payload)
+}
+
+onMounted(() => {
+  loadData()
+})
+
+// Watcher pour recharger les données quand les props changent
+watch([() => props.type, () => props.parentId], () => {
+  loadData()
 })
 </script>
 
@@ -35,7 +60,9 @@ onMounted(async () => {
             v-for="item in items" 
             :key="item.id"
             :item="item"
+            :model="model"
             :type="type"
+            @itemClick="handleItemClick"
           />
         </div>
         
@@ -46,20 +73,15 @@ onMounted(async () => {
         </UiCard>
       </div>
 
-      <!-- Breadcrumb pour les autres models -->
       <div v-else>
-        <UiBreadcrumb v-if="!error && items && items.length > 0">
-          <UiBreadcrumbList :class="[props.model === 'vertical' ? 'grid gap-2 text-sm px-2' : '']">
-            <UiBreadcrumbItem v-for="(item, index) in items" :key="item.id">
-              <UiBreadcrumbLink href="#" class="flex gap-2 items-center">
-                <div v-if="item.color && model === 'vertical' " class="w-2 h-2 rounded-full" :style="{ backgroundColor: item.color }"></div>
-                {{ item.name || item.title || `${type} #${item.id}` }}
-              </UiBreadcrumbLink>
-              <UiBreadcrumbSeparator v-if="index < items.length - 1" />
-            </UiBreadcrumbItem>
-          </UiBreadcrumbList>
-        </UiBreadcrumb>
-        
+        <div v-if="!error && items && items.length > 0">
+          <TachesItemBreadcrumb
+            :items="items"
+            :model="model"
+            :type="type"
+            @itemClick="handleItemClick"
+          />
+        </div>
         <p v-else-if="error" class="text-red-500">{{ error }}</p>
         <p v-else class="text-gray-500">Aucun {{ type }} trouvé</p>
       </div>
