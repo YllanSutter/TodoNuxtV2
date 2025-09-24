@@ -179,8 +179,14 @@ function navigateToItem(item) {
 
   switch (item.type) {
     case 'group':
-      nextType = 'subgroup'
-      parentId = item.id
+      if (item.id === null) {
+        // Accueil - afficher les groupes
+        nextType = 'group'
+        parentId = null
+      } else {
+        nextType = 'subgroup'
+        parentId = item.id
+      }
       break
     case 'subgroup':
       nextType = 'project'
@@ -199,7 +205,7 @@ function navigateToItem(item) {
     item: { id: item.id, name: item.name },
     currentType: item.type,
     nextType,
-    parentId: item.id
+    parentId: item.id === null ? null : item.id
   })
 }
 
@@ -289,7 +295,7 @@ onMounted(async () => {
     <!-- Accueil -->
     <div 
       class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors"
-      :class="props.currentType === 'group' && props.currentParentId === null ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-gray-700/50'"
+      :class="!props.selectedItemId && !props.selectedType ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-gray-700/50'"
       @click="navigateToItem({ name: 'Accueil', type: 'group', id: null })"
     >
       <svg class="w-3 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,7 +339,7 @@ onMounted(async () => {
         <div v-for="subgroup in getSubgroupsForGroup(group.id)" :key="subgroup.id" class="space-y-1">
           <div 
             class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors"
-            :class="isSelected(subgroup, 'subgroup') ? 'bg-purple-600/20 text-purple-400' : 'hover:bg-gray-700/50'"
+            :class="isSelected(subgroup, 'subgroup') ? 'bg-white/5' : 'hover:bg-white/5'"
             @click="navigateToItem({ ...subgroup, type: 'subgroup' })"
           >
             <button
@@ -365,7 +371,7 @@ onMounted(async () => {
               v-for="project in getProjectsForSubgroup(subgroup.id)" 
               :key="project.id"
               class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors"
-              :class="isSelected(project, 'project') ? 'bg-green-600/20 text-green-400' : 'hover:bg-gray-700/50'"
+              :class="isSelected(project, 'project') ? 'bg-white/5' : 'hover:bg-white/5'"
               @click="navigateToItem({ ...project, type: 'project' })"
             >
               <div class="w-3 flex justify-center">

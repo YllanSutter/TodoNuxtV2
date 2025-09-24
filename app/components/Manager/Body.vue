@@ -54,10 +54,8 @@ watch([() => props.selectedItemId, () => props.selectedType], ([newId, newType])
 
 // Gestion de la navigation
 function handleNavigate(payload) {
-  // Flag pour indiquer que la navigation vient des cards
   isNavigatingFromCards.value = true
   
-  // Ajouter l'item cliqué à l'historique (pas l'état actuel)
   navigationHistory.value.push({
     type: payload.currentType,
     parentId: payload.parentId,
@@ -66,12 +64,11 @@ function handleNavigate(payload) {
   })
   
   currentType.value = payload.nextType
-  // Le currentParentId devient l'ID de l'élément sur lequel on a cliqué
   currentParentId.value = payload.item.id
   
   emit('sidebarSelect', {
     item: payload.item,
-    type: payload.currentType  // Utiliser currentType pour mettre en surbrillance l'item cliqué
+    type: payload.currentType 
   })
 }
 
