@@ -51,7 +51,7 @@ watch([() => props.type, () => props.parentId], () => {
 <template>
     <div>
       <!-- Affichage conditionnel selon le model -->
-      <div v-if="model === 'card'">
+      <div v-if="model === 'card' && (type != 'todo' || items.length == 0)">
         <h2 class="text-xl font-bold mb-1">Groupe de projets</h2>
         <p class="text-sm opacity-50 mb-8">Organisez vos projets par groupes thématiques</p>
         
@@ -71,14 +71,17 @@ watch([() => props.type, () => props.parentId], () => {
         
       </div>
 
+      <div v-else-if="type == 'todo'" class="mt-10">
+        <div v-for="item in items" :class="`pl-${2 * item.level}`">
+          <input v-if="item.type == 'TASK'" type="checkbox" class="mr-2" :id="item.id" :checked="item.completed ? 'checked' : false"></input>
+          <input type="text" :value="item.content" /></input>
+        </div>
+        <TachesAddElem :type="props.type" :parentId="props.parentId"/>
+        
+      </div>
+
       <div v-else>
         <div v-if="!error && items && items.length > 0">
-          <TachesItemBreadcrumb
-            :items="items"
-            :model="model"
-            :type="type"
-            @itemClick="handleItemClick"
-          />
           
         </div>
         <p v-else-if="error" class="text-red-500">{{ error }}</p>

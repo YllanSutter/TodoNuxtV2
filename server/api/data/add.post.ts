@@ -43,6 +43,17 @@ export default defineEventHandler(async (event) => {
     projectTag: 'projectId'
   }
 
+  // Champs autorisés pour chaque type
+  const allowedFields: Record<string, string[]> = {
+    group: ['name', 'description', 'color', 'order'],
+    subgroup: ['name', 'description', 'color', 'order', 'groupId'],
+    project: ['name', 'description', 'status', 'color', 'order', 'subgroupId', 'templateId'],
+    todo: ['content', 'type', 'completed', 'order', 'level', 'projectId', 'parentId'],
+    tag: ['name', 'color'],
+    template: ['name', 'description'],
+    templateItem: ['content', 'type', 'order', 'level', 'templateId', 'parentId']
+  }
+
   // Schémas de données par défaut
   const defaultDataSchemas: Record<string, any> = {
     group: {
@@ -62,10 +73,11 @@ export default defineEventHandler(async (event) => {
       color: () => `#${Math.floor(Math.random()*16777215).toString(16)}`
     },
     todo: {
-      title: (index: number) => `Nouvelle tâche ${index}`,
-      description: (index: number) => `Description de la tâche ${index}`,
-      status: () => 'pending',
-      priority: () => 'medium'
+      content: (index: number) => `Nouvelle tâche ${index}`,
+      type: () => 'TASK',
+      completed: () => false,
+      order: (index: number) => index,
+      level: () => 0
     },
     tag: {
       name: (index: number) => `Tag ${index}`,
@@ -115,8 +127,17 @@ export default defineEventHandler(async (event) => {
         itemData[parentField] = parentId
       }
 
-      // Fusionner avec les données personnalisées
-      Object.assign(itemData, data)
+      // Fusionner avec les données personnalisées (en filtrant les champs autorisés)
+      if (allowedFields[type as string]) {
+        const allowed = allowedFields[type as string]
+        for (const [key, value] of Object.entries(data)) {
+          if (allowed.includes(key)) {
+            itemData[key] = value
+          }
+        }
+      } else {
+        Object.assign(itemData, data)
+      }
 
       // Ajouter les timestamps
       itemData.createdAt = new Date()
