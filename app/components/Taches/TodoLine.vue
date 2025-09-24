@@ -78,6 +78,25 @@
         <Icon name="material-symbols:delete-outline" class="w-4 h-4" />
       </button>
     </div>
+
+    <!-- Alert Dialog pour la confirmation de suppression -->
+    <AlertDialog v-model:open="showDeleteDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+          <AlertDialogDescription>
+            Êtes-vous sûr de vouloir supprimer cette tâche ?
+            Cette action est irréversible.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showDeleteDialog = false">Annuler</AlertDialogCancel>
+          <AlertDialogAction @click="confirmDeleteItem" class="text-white bg-red-600 hover:bg-red-700">
+            Supprimer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
@@ -121,6 +140,7 @@ const isDragging = ref(false)
 const isDragEnabled = ref(false)
 const dropPosition = ref(null) // 'before', 'after', 'inside'
 const updateTimeout = ref(null)
+const showDeleteDialog = ref(false)
 
 // Watchers
 watch(() => props.item.content, (newContent) => {
@@ -165,21 +185,31 @@ async function updateCompleted(event) {
   await updateItem({ completed })
 }
 
-async function deleteItem() {
-  if (localContent.value.trim() === '' || confirm('Êtes-vous sûr de vouloir supprimer cette ligne ?')) {
-    try {
-      await $fetch('/api/data/delete', {
-        method: 'DELETE',
-        body: {
-          id: props.item.id,
-          type: 'todo'
-        }
-      })
-      
-      emit('delete', props.item.id)
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-    }
+function deleteItem() {
+  // Si la ligne est vide, supprimer directement
+  if (localContent.value.trim() === '') {
+    confirmDeleteItem()
+  } else {
+    // Sinon, demander confirmation
+    showDeleteDialog.value = true
+  }
+}
+
+async function confirmDeleteItem() {
+  showDeleteDialog.value = false
+  
+  try {
+    await $fetch('/api/data/delete', {
+      method: 'DELETE',
+      body: {
+        id: props.item.id,
+        type: 'todo'
+      }
+    })
+    
+    emit('delete', props.item.id)
+  } catch (error) {
+    console.error('Erreur lors de la suppression:', error)
   }
 }
 
@@ -243,6 +273,10 @@ function handleKeyDown(event) {
 
 async function createNewLine() {
   try {
+    // Calculer l'ordre pour insérer après la tâche actuelle
+    // L'API gérera automatiquement le décalage des éléments existants
+    const newOrder = Math.floor((props.item.order || 0)) + 1
+    
     const newTodo = await $fetch('/api/data/add', {
       method: 'POST',
       body: {
@@ -253,7 +287,7 @@ async function createNewLine() {
           content: '',
           type: 'TASK',
           level: props.item.level || 0,
-          order: (props.item.order || 0) + 1
+          order: newOrder
         }
       }
     })

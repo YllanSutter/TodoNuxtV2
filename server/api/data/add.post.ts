@@ -139,6 +139,34 @@ export default defineEventHandler(async (event) => {
         Object.assign(itemData, data)
       }
 
+      // Gestion spéciale de l'ordre pour éviter les conflits
+      if (itemData.order !== undefined && parentId) {
+        const desiredOrder = itemData.order
+        
+        // Trouver tous les éléments du même parent avec un ordre >= à l'ordre désiré
+        const whereClause: any = {}
+        if (parentFieldMap[type as string]) {
+          whereClause[parentFieldMap[type as string]] = parentId
+        }
+        whereClause.order = { gte: desiredOrder }
+        
+        const conflictingItems = await model.findMany({
+          where: whereClause,
+          orderBy: { order: 'asc' }
+        })
+        
+        // Si des conflits existent, décaler tous les éléments de +1
+        if (conflictingItems.length > 0) {
+          for (const conflictItem of conflictingItems) {
+            await model.update({
+              where: { id: conflictItem.id },
+              data: { order: conflictItem.order + 1 }
+            })
+          }
+          console.log(`Décalé ${conflictingItems.length} éléments pour éviter les conflits d'ordre`)
+        }
+      }
+
       // Ajouter les timestamps
       itemData.createdAt = new Date()
       itemData.updatedAt = new Date()

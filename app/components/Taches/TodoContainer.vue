@@ -73,6 +73,26 @@
         <div class="mt-4">
         <TachesAddElem :type="'todo'" :parent-id="parentId" @created="handleItemCreated" />
         </div>
+
+    <!-- Alert Dialog pour la confirmation de suppression -->
+    <AlertDialog v-model:open="showDeleteDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+          <AlertDialogDescription>
+            Êtes-vous sûr de vouloir supprimer {{ selectedItems.length }} élément(s) ?
+            Cette action est irréversible.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel @click="showDeleteDialog = false">Annuler</AlertDialogCancel>
+          <AlertDialogAction @click="confirmDeleteSelectedItems" class="text-white bg-red-600 hover:bg-red-700">
+            Supprimer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
     </div>
 
 </template>
@@ -97,6 +117,7 @@ const todoListRef = ref(null)
 // State
 const localItems = ref([...props.items])
 const selectedItems = ref([])
+const showDeleteDialog = ref(false)
 
 // Selection box state
 const selectionBox = ref({
@@ -365,11 +386,14 @@ async function copySelectedItems() {
   }
 }
 
-async function deleteSelectedItems() {
-  if (!confirm(`Êtes-vous sûr de vouloir supprimer ${selectedItems.value.length} élément(s) ?`)) {
-    return
-  }
+function deleteSelectedItems() {
+  // Ouvrir le dialog de confirmation
+  showDeleteDialog.value = true
+}
 
+async function confirmDeleteSelectedItems() {
+  showDeleteDialog.value = false
+  
   try {
     // Supprimer chaque item sélectionné
     const deletePromises = selectedItems.value.map(itemId => 
@@ -579,6 +603,19 @@ function handleKeyDown(event) {
     return
   }
 
+  // Gestion de Delete pour supprimer les éléments sélectionnés (sans Ctrl)
+  if ((event.key === 'Delete' || event.key === 'Backspace') && selectedItems.value.length > 0) {
+    // Vérifier qu'on n'est pas dans un input en train d'éditer
+    const activeElement = document.activeElement
+    const isInInput = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')
+    
+    if (!isInInput) {
+      event.preventDefault()
+      deleteSelectedItems()
+      return
+    }
+  }
+
   if (event.ctrlKey || event.metaKey) {
     switch (event.key) {
       case 'a':
@@ -589,13 +626,6 @@ function handleKeyDown(event) {
         if (selectedItems.value.length > 0) {
           event.preventDefault()
           copySelectedItems()
-        }
-        break
-      case 'Delete':
-      case 'Backspace':
-        if (selectedItems.value.length > 0) {
-          event.preventDefault()
-          deleteSelectedItems()
         }
         break
     }
