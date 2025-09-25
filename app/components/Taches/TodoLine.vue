@@ -238,7 +238,18 @@ async function updateCompleted(event) {
 
 async function toggleCompleted() {
   const newCompleted = !props.item.completed
-  await updateItem({ completed: newCompleted })
+  
+  try {
+    // Optimistic update - mettre à jour localement d'abord
+    emit('update', { ...props.item, completed: newCompleted })
+    
+    // Puis faire l'appel API
+    await updateItem({ completed: newCompleted })
+  } catch (error) {
+    console.error('Erreur lors du toggle completed:', error)
+    // En cas d'erreur, revenir à l'état précédent
+    emit('update', { ...props.item, completed: !newCompleted })
+  }
 }
 
 function deleteItem() {
