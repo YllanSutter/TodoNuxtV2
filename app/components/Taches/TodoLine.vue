@@ -48,7 +48,7 @@
         <div 
           @click="toggleCompleted"
           :class="[
-            'w-4 h-4 rounded-full border-2 cursor-pointer transition-all duration-200 flex items-center justify-center',
+            'w-5 h-5 rounded-full border-2 cursor-pointer transition-all duration-200 flex items-center justify-center',
             item.completed ? 'bg-success border-success' : 'border-[#ffffff10] hover:border-success'
           ]"
         >
@@ -73,8 +73,6 @@
       </span>
     </div>
 
-
-
     <!-- Input de contenu -->
     <input
       ref="contentInput"
@@ -96,8 +94,21 @@
 
     <!-- Actions -->
     <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-      
-      
+      <!-- Sélecteur de type -->
+      <button
+        @click.stop="changeType('TASK')"
+        :class="[item.type === 'TASK' ? 'text-success' : 'text-gray-400', 'hover:text-success cursor-pointer transition-all duration-300']"
+        title="Tâche classique"
+      >
+        <Icon name="lucide:check-circle-2" class="w-4 h-4" />
+      </button>
+      <button
+        @click.stop="changeType('TITLE')"
+        :class="[item.type === 'TITLE' ? 'text-purple-500' : 'text-gray-400', 'hover:text-purple-500 cursor-pointer transition-all duration-300']"
+        title="Titre"
+      >
+        <Icon name="lucide:type" class="w-4 h-4" />
+      </button>
       <!-- Bouton de suppression -->
       <button
         @click.stop="deleteItem"
@@ -199,6 +210,17 @@ function toggleCollapse() {
 }
 
 // Methods
+
+async function changeType(newType) {
+  if (props.item.type === newType) return
+  try {
+    await updateItem({ type: newType })
+    // Mise à jour visuelle immédiate
+    emit('update', { ...props.item, type: newType })
+  } catch (error) {
+    console.error('Erreur lors du changement de type:', error)
+  }
+}
 function handleInput() {
   // Debounce update
   if (updateTimeout.value) {
