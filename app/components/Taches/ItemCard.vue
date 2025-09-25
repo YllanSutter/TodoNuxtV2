@@ -68,6 +68,15 @@ watch(() => props.item.id, () => {
   }
 })
 
+// Liste des statuts de projet (enum du schema.prisma)
+const projectStatusList = [
+  'DRAFT',
+  'ACTIVE',
+  'ON_HOLD',
+  'COMPLETED',
+  'ARCHIVED'
+]
+
 const emit = defineEmits(['itemClick'])
 
 function ChangeItem(item){
@@ -94,7 +103,7 @@ function ChangeItem(item){
 </script>
 
 <template>
-  <UiCard @click="ChangeItem(item)" class="transition-all duration-300 hover:bg-white/5 cursor-pointer relative">
+  <UiCard @click="(e) => { e.stopPropagation(); ChangeItem(item); }" class="transition-all duration-300 hover:bg-white/5 cursor-pointer relative">
      <!-- Tags pour les projets -->
       <div v-if="isProject && (projectTags.length > 0 || isLoadingTags)" class="absolute -top-3 left-2">
         <div v-if="isLoadingTags" class="text-xs text-muted-foreground">
@@ -111,12 +120,58 @@ function ChangeItem(item){
           </span>
         </div>
       </div>
+   
     <UiCardHeader class="flex items-center gap-4">
       <div v-if="item.color" class="w-3 h-3 rounded-full" :style="{ backgroundColor: item.color }"></div>
       <UiCardTitle>{{ item.name || item.title || `${type} #${item.id}` }}</UiCardTitle>
       <UiCardDescription v-if="item.description">
         {{ item.description }}
       </UiCardDescription>
+      <Popover>
+        <PopoverTrigger as-child>
+        <Button variant="ghost" @click.stop>
+          <Icon  name="tabler:dots"></Icon>
+        </Button>
+        </PopoverTrigger>
+        <PopoverContent class="w-80" @click.stop>
+            <div class="grid grid-cols-3 items-center gap-4">
+                <Label for="name">Nom</Label>
+                <Input
+                    id="name"
+                    v-model="item.name"
+                    type="text"
+                    :placeholder="`Nom du ${props.type}`"
+                    class="col-span-2 h-8"
+                />
+            </div>
+            <div v-if="props.type !== 'todo'" class="grid grid-cols-3 items-center gap-4">
+                <Label for="color">Couleur</Label>
+                <Input
+                    id="color"
+                    v-model="item.color"
+                    type="color"
+                    placeholder="#ff3366"
+                    class="col-span-2 h-8"
+                />
+            </div>
+            <div v-if="props.type === 'project'" class="grid grid-cols-3 items-center gap-4">
+                <Label for="status">Status</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup class="lowercase">
+                      <SelectLabel class="border-b border-white/10">Status</SelectLabel>
+                      <SelectItem v-for="statut in projectStatusList" :value="statut">
+                         {{ statut }}
+                      </SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+            </div>
+        </PopoverContent>
+      </Popover>
     </UiCardHeader>
     <UiCardContent>
      
