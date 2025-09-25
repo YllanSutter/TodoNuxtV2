@@ -48,30 +48,40 @@
           <!-- Header avec actions en lot -->
      
      <Alert v-if="selectedItems.length > 0" class="mb-4 text-xs">
-            
-        <AlertTitle class="w-full opacity-50 flex items-center"><Icon name="material-symbols:checklist" class="h-2 w-2 mr-2" />{{ selectedItems.length }} élément(s) sélectionné(s)</AlertTitle>
-
+        <AlertTitle class="w-full opacity-50 flex items-center">
+          <Icon name="material-symbols:checklist" class="h-2 w-2 mr-2" />
+          {{ selectedItems.length }} élément(s) sélectionné(s)
+        </AlertTitle>
         <AlertDescription class="flex items-center gap-2 mt-2">
-            <UiButton size="xs" variant="outline" @click="decreaseIndent" class="p-1 text-xs opacity-50 hover:opacity-100">
+          <UiButton size="xs" variant="outline" @click="decreaseIndent" class="p-1 text-xs opacity-50 hover:opacity-100">
             <Icon name="material-symbols:format-indent-decrease" class="h-2 w-2" />
             Désindenter
-            </UiButton>
-            <UiButton size="xs" variant="outline" @click="increaseIndent" class="p-1 text-xs opacity-50 hover:opacity-100">
+          </UiButton>
+          <UiButton size="xs" variant="outline" @click="increaseIndent" class="p-1 text-xs opacity-50 hover:opacity-100">
             <Icon name="material-symbols:format-indent-increase" class="h-2 w-2" />
             Indenter
-            </UiButton>
-            <UiButton size="xs" variant="outline" @click="copySelectedItems" class="p-1 text-xs opacity-50 hover:opacity-100">
+          </UiButton>
+          <UiButton size="xs" variant="outline" @click="copySelectedItems" class="p-1 text-xs opacity-50 hover:opacity-100">
             <Icon name="material-symbols:content-copy" class="h-2 w-2" />
             Copier
-            </UiButton>
-            <UiButton size="xs" variant="outline" @click="deleteSelectedItems" class="p-1 text-xs opacity-50 hover:opacity-100">
+          </UiButton>
+          <UiButton size="xs" variant="outline" @click="deleteSelectedItems" class="p-1 text-xs opacity-50 hover:opacity-100">
             <Icon name="material-symbols:delete-outline" class="h-2 w-2" />
             Supprimer
-            </UiButton>
-            <UiButton size="xs" variant="ghost" @click="clearSelection" class="p-1 text-xs opacity-50 hover:opacity-100">
+          </UiButton>
+          <!-- Boutons pour changer le type de tous -->
+          <UiButton size="xs" variant="outline" @click="changeSelectedType('TASK')" class="p-1 text-xs opacity-50 hover:text-success">
+            <Icon name="lucide:check-circle-2" class="h-2 w-2" />
+            Tout en tâche
+          </UiButton>
+          <UiButton size="xs" variant="outline" @click="changeSelectedType('TITLE')" class="p-1 text-xs opacity-50">
+            <Icon name="lucide:type" class="h-2 w-2" />
+            Tout en titre
+          </UiButton>
+          <UiButton size="xs" variant="ghost" @click="clearSelection" class="p-1 text-xs opacity-50 hover:opacity-100">
             <Icon name="material-symbols:close" class="h-4 w-4" />
             Désélectionner
-            </UiButton>
+          </UiButton>
         </AlertDescription>
       </Alert>
         <!-- Bouton d'ajout -->
@@ -161,6 +171,30 @@ watch(() => props.items, (newItems) => {
 }, { deep: true })
 
 // Methods
+
+async function changeSelectedType(newType) {
+  try {
+    const itemsToUpdate = localItems.value.filter(item => selectedItems.value.includes(item.id))
+    const updatePromises = itemsToUpdate.map(item =>
+      $fetch('/api/data/update', {
+        method: 'PUT',
+        body: {
+          id: item.id,
+          type: 'todo',
+          data: { type: newType }
+        }
+      })
+    )
+    await Promise.all(updatePromises)
+    // Mise à jour locale immédiate
+    itemsToUpdate.forEach(item => {
+      item.type = newType
+    })
+    emit('refresh')
+  } catch (error) {
+    console.error('Erreur lors du changement de type multiple:', error)
+  }
+}
 function handleUpdate(updatedItem) {
   const index = localItems.value.findIndex(item => item.id === updatedItem.id)
   if (index !== -1) {

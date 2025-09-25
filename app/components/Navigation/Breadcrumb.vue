@@ -276,7 +276,7 @@ onMounted(async () => {
     <template v-for="(item, index) in navigationPath" :key="`nav-${index}`">
       <button
         @click="navigateToItem(item)"
-        class="text-blue-400 hover:text-blue-300 transition-colors"
+        class="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
         :class="{ 'text-gray-400': index === navigationPath.length - 1 }"
       >
         {{ item.name }}

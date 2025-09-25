@@ -20,6 +20,7 @@ const emit = defineEmits(['navigate'])
 
 const items = ref([])
 const error = ref(null)
+const project = ref(null)
 
 // Fonction pour charger les données
 async function loadData(type = props.type, parentId = props.parentId) {
@@ -28,7 +29,22 @@ async function loadData(type = props.type, parentId = props.parentId) {
     if (parentId) {
       url += `&parentId=${parentId}`
     }
-    items.value = await $fetch(url)
+    const result = await $fetch(url)
+    items.value = result
+
+    // Si on est en mode todo, récupérer le projet associé
+    if (type === 'todo' && items.value.length > 0 && items.value[0].projectId) {
+      const projectId = items.value[0].projectId
+      try {
+        const projRes = await $fetch(`/api/data?type=project&id=${projectId}`)
+        // projRes peut être un tableau ou un objet selon l'API
+        project.value = Array.isArray(projRes) ? projRes[0] : projRes
+      } catch (e) {
+        project.value = null
+      }
+    } else {
+      project.value = null
+    }
   } catch (e) {
     error.value = e
   }
@@ -77,8 +93,7 @@ watch([() => props.type, () => props.parentId], () => {
     <div>
       <!-- Affichage conditionnel selon le model -->
       <div v-if="model === 'card' && (type != 'todo' || items.length == 0)">
-        <h2 class="text-xl font-bold mb-1">Groupe de projets</h2>
-        <p class="text-sm opacity-50 mb-8">Organisez vos projets par groupes thématiques</p>
+        <h2 class="text-xl font-bold mt-3 capitalize mb-6">{{ type }}</h2>
         
         <div v-if="!error && items && items.length > 0" class="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
           <TachesItemCard 
@@ -100,6 +115,15 @@ watch([() => props.type, () => props.parentId], () => {
       </div>
 
       <div v-else-if="type == 'todo'" class="mt-10">
+        <!-- Affichage des infos du projet -->
+        <div v-if="project" class="mb-6 p-4 rounded bg-white/5 border border-white/10">
+          <h2 class="text-lg font-bold mb-2">Projet : {{ project.name }}</h2>
+          <p v-if="project.description" class="text-sm opacity-70 mb-1">{{ project.description }}</p>
+          <div class="flex gap-4 text-xs opacity-50">
+            <span v-if="project.status">Statut : <span class="capitalize">{{ project.status }}</span></span>
+            <span v-if="project.createdAt">Créé le : {{ new Date(project.createdAt).toLocaleDateString() }}</span>
+          </div>
+        </div>
         <TachesTodoContainer
           :items="items" 
           :parent-id="props.parentId"

@@ -59,18 +59,6 @@
           />
         </div>
       </div>
-      
-      <!-- Indicateur de type pour les autres types -->
-      <span 
-        v-else
-        class="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white mr-1"
-        :class="{
-          'bg-purple-500': item.type === 'TITLE',
-          'bg-gray-500': item.type === 'NOTE'
-        }"
-      >
-        {{ item.type === 'TITLE' ? 'T' : 'N' }}
-      </span>
     </div>
 
     <!-- Input de contenu -->
@@ -82,8 +70,8 @@
       class="flex-1 bg-transparent border-none outline-none"
       :class="{
         'line-through opacity-60': item.completed,
-        'font-bold text-lg': item.type === 'TITLE',
-        'text-sm italic text-gray-600 dark:text-gray-400': item.type === 'NOTE'
+        'font-bold text-lg my-3': item.type === 'TITLE',
+        'text-sm italic text-gray-600 dark:text-gray-400 test': item.type === 'NOTE'
       }"
       @input="handleInput"
       @keydown="handleKeyDown"
@@ -97,14 +85,14 @@
       <!-- Sélecteur de type -->
       <button
         @click.stop="changeType('TASK')"
-        :class="[item.type === 'TASK' ? 'text-success' : 'text-gray-400', 'hover:text-success cursor-pointer transition-all duration-300']"
+        :class="['transition-all duration-300 cursor-pointer hover:text-white/50']"
         title="Tâche classique"
       >
         <Icon name="lucide:check-circle-2" class="w-4 h-4" />
       </button>
       <button
         @click.stop="changeType('TITLE')"
-        :class="[item.type === 'TITLE' ? 'text-purple-500' : 'text-gray-400', 'hover:text-purple-500 cursor-pointer transition-all duration-300']"
+        :class="['transition-all duration-300 cursor-pointer hover:text-white/50']"
         title="Titre"
       >
         <Icon name="lucide:type" class="w-4 h-4" />

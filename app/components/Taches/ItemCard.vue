@@ -168,15 +168,17 @@ async function confirmDelete() {
         </div>
       </div>
    
-    <UiCardHeader class="flex items-center gap-4">
-      <div v-if="item.color" class="w-3 h-3 rounded-full" :style="{ backgroundColor: item.color }"></div>
-      <UiCardTitle>{{ item.name || item.title || `${type} #${item.id}` }}</UiCardTitle>
-      <UiCardDescription v-if="item.description">
-        {{ item.description }}
-      </UiCardDescription>
+    <UiCardHeader class="flex items-center gap-4 justify-between">
+      <div class="left flex items-center gap-2">
+        <div v-if="item.color" class="w-3 h-3 rounded-full" :style="{ backgroundColor: item.color }"></div>
+        <UiCardTitle>{{ item.name || item.title || `${type} #${item.id}` }}</UiCardTitle>
+        <UiCardDescription v-if="item.description">
+          {{ item.description }}
+        </UiCardDescription>
+      </div>
       <Popover v-model:open="isPopoverOpen">
               <PopoverTrigger as-child>
-              <Button variant="ghost" @click.stop>
+              <Button variant="ghost" @click.stop class="self-end">
                 <Icon  name="tabler:dots"></Icon>
               </Button>
               </PopoverTrigger>
@@ -188,6 +190,16 @@ async function confirmDelete() {
                     v-model="item.name"
                     type="text"
                     :placeholder="`Nom du ${props.type}`"
+                    class="col-span-2 h-8"
+                />
+            </div>
+             <div class="grid grid-cols-3 items-center gap-4">
+                <Label for="description">Description</Label>
+                <Input
+                    id="description"
+                    v-model="item.description"
+                    type="text"
+                    :placeholder="`Description du ${props.type}`"
                     class="col-span-2 h-8"
                 />
             </div>

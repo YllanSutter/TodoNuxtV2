@@ -59,17 +59,17 @@ export default defineEventHandler(async (event) => {
   const defaultDataSchemas: Record<string, any> = {
     group: {
       name: (index: number) => `Nouveau groupe ${index}`,
-      description: (index: number) => `Description du groupe ${index}`,
+      description: () => '',
       color: () => `#${Math.floor(Math.random()*16777215).toString(16)}`
     },
     subgroup: {
       name: (index: number) => `Nouveau sous-groupe ${index}`,
-      description: (index: number) => `Description du sous-groupe ${index}`,
+      description: () => '',
       color: () => `#${Math.floor(Math.random()*16777215).toString(16)}`
     },
     project: {
       name: (index: number) => `Nouveau projet ${index}`,
-      description: (index: number) => `Description du projet ${index}`,
+      description: () => '',
       status: () => 'DRAFT',
       color: () => `#${Math.floor(Math.random()*16777215).toString(16)}`
     },
@@ -86,11 +86,11 @@ export default defineEventHandler(async (event) => {
     },
     template: {
       name: (index: number) => `Template ${index}`,
-      description: (index: number) => `Description du template ${index}`
+      description: () => ''
     },
     templateItem: {
       title: (index: number) => `Item template ${index}`,
-      description: (index: number) => `Description de l'item ${index}`,
+      description: () => '',
       order: (index: number) => index
     },
     projectTag: {
