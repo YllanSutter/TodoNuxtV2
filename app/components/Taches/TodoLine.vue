@@ -127,6 +127,10 @@ const props = defineProps({
   parentId: {
     type: String,
     default: null
+  },
+  allItems: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -137,7 +141,8 @@ const emit = defineEmits([
   'select',
   'move',
   'paste-lines',
-  'clear-selection'
+  'clear-selection',
+  'refresh'
 ])
 
 // Refs
@@ -254,15 +259,13 @@ function handleKeyDown(event) {
       break
       
     case 'Tab':
-      // Si plusieurs éléments sont sélectionnés, laisser le container gérer l'indentation
       if (props.hasMultipleSelection) {
-        return // Ne pas preventDefault, laisser l'événement remonter
+        return 
       }
       
       event.preventDefault()
       const levelDelta = event.shiftKey ? -1 : 1
-      const newLevel = Math.max(0, (props.item.level || 0) + levelDelta)
-      updateItem({ level: newLevel })
+      handleIndentation(levelDelta)
       break
       
     case 'c':
@@ -436,6 +439,147 @@ function handleDrop(event) {
     console.error('Erreur lors du drop:', error)
   } finally {
     dropPosition.value = null
+  }
+}
+
+// Indentation management
+async function handleIndentation(levelDelta) {
+  const newLevel = Math.max(0, (props.item.level || 0) + levelDelta)
+  
+  // Calculer le nouveau parentId
+  const newParentId = findNewParentId(newLevel)
+  
+  // Trouver tous les enfants de cet élément
+  const childrenItems = findChildrenItems()
+  
+  // Mettre à jour l'élément courant
+  const updateData = { 
+    level: newLevel,
+    parentId: newParentId 
+  }
+  
+  await updateItem(updateData)
+  
+  // Si l'élément a des enfants, les indenter aussi
+  if (childrenItems.length > 0) {
+    await updateChildrenIndentation(childrenItems, levelDelta)
+    
+    // Attendre la prochaine tick pour que les mises à jour soient appliquées
+    await nextTick()
+    
+    // Demander un refresh du container pour synchroniser toutes les données
+    emit('refresh')
+  }
+}
+
+function findNewParentId(targetLevel) {
+  // Si on déindente au niveau 0, pas de parent
+  if (targetLevel === 0) {
+    return null
+  }
+  
+  const allItems = props.allItems
+  const currentIndex = allItems.findIndex(item => item.id === props.item.id)
+  
+  if (currentIndex === -1) {
+    return null
+  }
+  
+  // Chercher en remontant un élément avec le niveau parent (targetLevel - 1)
+  const parentLevel = targetLevel - 1
+  
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    const potentialParent = allItems[i]
+    const potentialParentLevel = potentialParent.level || 0
+    
+    if (potentialParentLevel === parentLevel) {
+      return potentialParent.id
+    }
+  }
+  
+  return null
+}
+
+function findChildrenItems() {
+  const allItems = props.allItems
+  const children = []
+  const currentLevel = props.item.level || 0
+  const currentIndex = allItems.findIndex(item => item.id === props.item.id)
+  
+  if (currentIndex === -1) {
+    return []
+  }
+  
+  // Parcourir les éléments suivants pour trouver les enfants
+  for (let i = currentIndex + 1; i < allItems.length; i++) {
+    const item = allItems[i]
+    const itemLevel = item.level || 0
+    
+    // Si le niveau est inférieur ou égal au niveau courant, on arrête
+    if (itemLevel <= currentLevel) {
+      break
+    }
+    
+    // C'est un enfant (direct ou indirect)
+    children.push(item)
+  }
+  
+  return children
+}
+
+async function updateChildrenIndentation(children, levelDelta) {
+  try {
+    // Utiliser les données locales au lieu d'un appel API
+    const allItems = props.allItems
+    
+    const updatePromises = children.map((child) => {
+      const newChildLevel = Math.max(0, (child.level || 0) + levelDelta)
+      
+      // Calculer le nouveau parentId pour cet enfant
+      let newChildParentId = null
+      if (newChildLevel > 0) {
+        const childIndex = allItems.findIndex(item => item.id === child.id)
+        if (childIndex !== -1) {
+          const parentLevel = newChildLevel - 1
+          
+          // Chercher en remontant un élément avec le niveau parent
+          for (let i = childIndex - 1; i >= 0; i--) {
+            const potentialParent = allItems[i]
+            const potentialParentLevel = (potentialParent.level || 0) + (potentialParent.id === props.item.id ? levelDelta : 0)
+            
+            if (potentialParentLevel === parentLevel) {
+              newChildParentId = potentialParent.id
+              break
+            }
+          }
+        }
+      }
+      
+      return $fetch('/api/data/update', {
+        method: 'PUT',
+        body: {
+          id: child.id,
+          type: 'todo',
+          data: { 
+            level: newChildLevel,
+            parentId: newChildParentId
+          }
+        }
+      }).then(() => {
+        // Émettre la mise à jour pour chaque enfant individuellement
+        const updatedChild = { 
+          ...child, 
+          level: newChildLevel,
+          parentId: newChildParentId
+        }
+        emit('update', updatedChild)
+        return updatedChild
+      })
+    })
+    
+    await Promise.all(updatePromises)
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des enfants:', error)
   }
 }
 

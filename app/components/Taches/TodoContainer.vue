@@ -31,6 +31,7 @@
         :is-selected="selectedItems.includes(item.id)"
         :has-multiple-selection="selectedItems.length > 1"
         :parent-id="parentId"
+        :all-items="sortedItems"
         @update="handleUpdate"
         @delete="handleDelete"
         @create-new-line="handleCreateNewLine"
@@ -38,6 +39,7 @@
         @move="handleMove"
         @paste-lines="handlePasteLines"
         @clear-selection="handleClearSelection"
+        @refresh="handleRefresh"
       />
     </div>
           <!-- Header avec actions en lot -->
@@ -157,6 +159,10 @@ function handleUpdate(updatedItem) {
     localItems.value[index] = { ...localItems.value[index], ...updatedItem }
   }
   emit('update', updatedItem)
+}
+
+function handleRefresh() {
+  emit('refresh')
 }
 
 function handleDelete(itemId) {
@@ -616,16 +622,34 @@ async function handleMultipleIndentation(levelDelta) {
     // Récupérer tous les items sélectionnés
     const itemsToUpdate = localItems.value.filter(item => selectedItems.value.includes(item.id))
     
-    // Mettre à jour chaque item sélectionné
-    const updatePromises = itemsToUpdate.map(item => {
+    // Trier les items par ordre pour traiter correctement la hiérarchie
+    const sortedItemsToUpdate = itemsToUpdate.sort((a, b) => (a.order || 0) - (b.order || 0))
+    
+    // Collecter tous les enfants à mettre à jour aussi
+    const allItemsToUpdate = new Set()
+    
+    for (const item of sortedItemsToUpdate) {
+      allItemsToUpdate.add(item)
+      
+      // Trouver les enfants de cet item
+      const children = findChildrenItemsForMultiple(item, localItems.value)
+      children.forEach(child => allItemsToUpdate.add(child))
+    }
+    
+    // Mettre à jour chaque item avec son nouveau niveau et parentId
+    const updatePromises = Array.from(allItemsToUpdate).map((item) => {
       const newLevel = Math.max(0, (item.level || 0) + levelDelta)
+      const newParentId = findNewParentIdForMultiple(item, newLevel, localItems.value)
       
       return $fetch('/api/data/update', {
         method: 'PUT',
         body: {
           id: item.id,
           type: 'todo',
-          data: { level: newLevel }
+          data: { 
+            level: newLevel,
+            parentId: newParentId
+          }
         }
       })
     })
@@ -633,11 +657,13 @@ async function handleMultipleIndentation(levelDelta) {
     await Promise.all(updatePromises)
     
     // Mettre à jour les items locaux
-    itemsToUpdate.forEach(item => {
+    Array.from(allItemsToUpdate).forEach(item => {
       const newLevel = Math.max(0, (item.level || 0) + levelDelta)
+      const newParentId = findNewParentIdForMultiple(item, newLevel, localItems.value)
       const index = localItems.value.findIndex(i => i.id === item.id)
       if (index !== -1) {
         localItems.value[index].level = newLevel
+        localItems.value[index].parentId = newParentId
       }
     })
     
@@ -645,6 +671,54 @@ async function handleMultipleIndentation(levelDelta) {
   } catch (error) {
     console.error('Erreur lors de l\'indentation multiple:', error)
   }
+}
+
+function findChildrenItemsForMultiple(parentItem, allItems) {
+  const children = []
+  const parentLevel = parentItem.level || 0
+  const parentIndex = allItems.findIndex(item => item.id === parentItem.id)
+  
+  if (parentIndex === -1) return children
+  
+  // Parcourir les items après le parent pour trouver ses enfants
+  for (let i = parentIndex + 1; i < allItems.length; i++) {
+    const currentItem = allItems[i]
+    const currentLevel = currentItem.level || 0
+    
+    // Si le niveau est inférieur ou égal au parent, on sort (fin des enfants)
+    if (currentLevel <= parentLevel) {
+      break
+    }
+    
+    // Si c'est un enfant direct ou indirect, l'ajouter
+    children.push(currentItem)
+  }
+  
+  return children
+}
+
+function findNewParentIdForMultiple(item, targetLevel, allItems) {
+  // Si on déindente au niveau 0, pas de parent
+  if (targetLevel === 0) {
+    return null
+  }
+  
+  const currentIndex = allItems.findIndex(i => i.id === item.id)
+  if (currentIndex === -1) return null
+  
+  // Chercher en remontant un élément avec le niveau parent (targetLevel - 1)
+  const parentLevel = targetLevel - 1
+  
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    const potentialParent = allItems[i]
+    const potentialParentLevel = potentialParent.level || 0
+    
+    if (potentialParentLevel === parentLevel) {
+      return potentialParent.id
+    }
+  }
+  
+  return null
 }
 
 // Keyboard shortcuts
