@@ -636,10 +636,20 @@ async function handleMultipleIndentation(levelDelta) {
       children.forEach(child => allItemsToUpdate.add(child))
     }
     
-    // Mettre à jour chaque item avec son nouveau niveau et parentId
-    const updatePromises = Array.from(allItemsToUpdate).map((item) => {
+    // Créer une map des nouveaux niveaux pour tous les items à modifier
+    const itemsArray = Array.from(allItemsToUpdate)
+    const newLevelsMap = new Map()
+    const selectedItemsSet = new Set(selectedItems.value)
+    
+    itemsArray.forEach(item => {
       const newLevel = Math.max(0, (item.level || 0) + levelDelta)
-      const newParentId = findNewParentIdForMultiple(item, newLevel, localItems.value)
+      newLevelsMap.set(item.id, newLevel)
+    })
+    
+    // Mettre à jour chaque item avec son nouveau niveau et parentId
+    const updatePromises = itemsArray.map((item) => {
+      const newLevel = newLevelsMap.get(item.id)
+      const newParentId = findNewParentIdForMultipleWithContext(item, newLevel, localItems.value, newLevelsMap, selectedItemsSet)
       
       return $fetch('/api/data/update', {
         method: 'PUT',
@@ -657,9 +667,9 @@ async function handleMultipleIndentation(levelDelta) {
     await Promise.all(updatePromises)
     
     // Mettre à jour les items locaux
-    Array.from(allItemsToUpdate).forEach(item => {
-      const newLevel = Math.max(0, (item.level || 0) + levelDelta)
-      const newParentId = findNewParentIdForMultiple(item, newLevel, localItems.value)
+    itemsArray.forEach(item => {
+      const newLevel = newLevelsMap.get(item.id)
+      const newParentId = findNewParentIdForMultipleWithContext(item, newLevel, localItems.value, newLevelsMap, selectedItemsSet)
       const index = localItems.value.findIndex(i => i.id === item.id)
       if (index !== -1) {
         localItems.value[index].level = newLevel
@@ -712,6 +722,39 @@ function findNewParentIdForMultiple(item, targetLevel, allItems) {
   for (let i = currentIndex - 1; i >= 0; i--) {
     const potentialParent = allItems[i]
     const potentialParentLevel = potentialParent.level || 0
+    
+    if (potentialParentLevel === parentLevel) {
+      return potentialParent.id
+    }
+  }
+  
+  return null
+}
+
+function findNewParentIdForMultipleWithContext(item, targetLevel, allItems, newLevelsMap, selectedItemsSet) {
+  // Si on déindente au niveau 0, pas de parent
+  if (targetLevel === 0) {
+    return null
+  }
+  
+  const currentIndex = allItems.findIndex(i => i.id === item.id)
+  if (currentIndex === -1) return null
+  
+  // Chercher en remontant un élément avec le niveau parent (targetLevel - 1)
+  const parentLevel = targetLevel - 1
+  
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    const potentialParent = allItems[i]
+    
+    // Utiliser le nouveau niveau si cet item fait partie de la sélection
+    let potentialParentLevel
+    if (newLevelsMap.has(potentialParent.id)) {
+      // Cet item fait partie de ceux qui sont modifiés, utiliser son nouveau niveau
+      potentialParentLevel = newLevelsMap.get(potentialParent.id)
+    } else {
+      // Cet item n'est pas modifié, utiliser son niveau actuel
+      potentialParentLevel = potentialParent.level || 0
+    }
     
     if (potentialParentLevel === parentLevel) {
       return potentialParent.id
