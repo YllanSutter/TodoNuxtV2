@@ -25,7 +25,7 @@
       ></div>
       
       <TachesTodoLine
-        v-for="item in sortedItems"
+        v-for="item in visibleItems"
         :key="item.id"
         :item="item"
         :is-selected="selectedItems.includes(item.id)"
@@ -40,6 +40,7 @@
         @paste-lines="handlePasteLines"
         @clear-selection="handleClearSelection"
         @refresh="handleRefresh"
+        @toggle-collapse="handleToggleCollapse"
       />
     </div>
           <!-- Header avec actions en lot -->
@@ -120,6 +121,7 @@ const todoListRef = ref(null)
 const localItems = ref([...props.items])
 const selectedItems = ref([])
 const showDeleteDialog = ref(false)
+// Suppression de collapsedParents car on utilise maintenant visible/expanded dans la DB
 
 // Selection box state
 const selectionBox = ref({
@@ -147,6 +149,10 @@ const sortedItems = computed(() => {
   })
 })
 
+const visibleItems = computed(() => {
+  return sortedItems.value.filter(item => item.visible !== false)
+})
+
 // Watchers
 watch(() => props.items, (newItems) => {
   localItems.value = [...newItems]
@@ -163,6 +169,64 @@ function handleUpdate(updatedItem) {
 
 function handleRefresh() {
   emit('refresh')
+}
+
+// Methods for collapse functionality
+function findAllChildren(parentId, items = sortedItems.value) {
+  const children = []
+  
+  function findChildrenRecursive(currentParentId) {
+    items.forEach(item => {
+      if (item.parentId === currentParentId) {
+        children.push(item)
+        findChildrenRecursive(item.id) // Récursion pour les petits-enfants
+      }
+    })
+  }
+  
+  findChildrenRecursive(parentId)
+  return children
+}
+
+async function handleToggleCollapse(itemId) {
+  const item = sortedItems.value.find(i => i.id === itemId)
+  if (!item) return
+  
+  const newExpandedState = !item.expanded
+  const allChildren = findAllChildren(itemId)
+  
+  try {
+    // Mettre à jour l'état expanded de l'élément parent
+    await $fetch(`/api/data/update`, {
+      method: 'PUT',
+      body: {
+        id: itemId,
+        type: 'todo',
+        data: {
+          expanded: newExpandedState
+        }
+      }
+    })
+    
+    // Mettre à jour la visibilité de tous les enfants
+    for (const child of allChildren) {
+      await $fetch(`/api/data/update`, {
+        method: 'PUT',
+        body: {
+          id: child.id,
+          type: 'todo',
+          data: {
+            visible: newExpandedState
+          }
+        }
+      })
+    }
+    
+    // Rafraîchir les données
+    emit('refresh')
+  } catch (error) {
+    console.error('Erreur lors du toggle collapse:', error)
+  }
 }
 
 function handleDelete(itemId) {

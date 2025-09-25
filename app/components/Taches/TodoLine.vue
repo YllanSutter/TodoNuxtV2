@@ -25,34 +25,53 @@
     >
       <Icon name="material-symbols:drag-indicator" class="w-4 h-4" />
     </div>
-    <!-- Checkbox pour les tâches -->
-    <div v-if="item.type === 'TASK'" class="w-[25px] border-l border-white/5 p-2 pr-0" :style="{ marginLeft: `${(item.level || 0) * 16}px` }">
-      <div 
-        @click="toggleCompleted"
-        :class="[
-          'w-4 h-4 rounded-full border-2 cursor-pointer transition-all duration-200 flex items-center justify-center',
-          item.completed ? 'bg-success border-success' : 'border-[#ffffff10] hover:border-success'
-        ]"
+    <!-- Indentation et flèche collapse -->
+    <div class="flex items-center border-l border-white/5 p-2 pr-0" :style="{ marginLeft: `${(item.level || 0) * 16}px` }">
+      <!-- Flèche de collapse pour les parents -->
+      <button
+        v-if="hasChildren"
+        @click.stop="toggleCollapse"
+        class="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors mr-1"
+        :title="isCollapsed ? 'Développer' : 'Réduire'"
       >
         <Icon 
-          v-if="item.completed"
-          name="lucide:check" 
-          class="w-3 h-3 text-white animate-bounce-finite"
+          :name="isCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" 
+          class="w-3 h-3 transition-transform duration-200"
         />
+      </button>
+      
+      <!-- Espace vide pour aligner les éléments sans enfants -->
+      <div v-else class="w-4 mr-1"></div>
+      
+      <!-- Checkbox pour les tâches -->
+      <div v-if="item.type === 'TASK'" class="w-[25px]">
+        <div 
+          @click="toggleCompleted"
+          :class="[
+            'w-4 h-4 rounded-full border-2 cursor-pointer transition-all duration-200 flex items-center justify-center',
+            item.completed ? 'bg-success border-success' : 'border-[#ffffff10] hover:border-success'
+          ]"
+        >
+          <Icon 
+            v-if="item.completed"
+            name="lucide:check" 
+            class="w-3 h-3 text-white animate-bounce-finite"
+          />
+        </div>
       </div>
+      
+      <!-- Indicateur de type pour les autres types -->
+      <span 
+        v-else
+        class="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white mr-1"
+        :class="{
+          'bg-purple-500': item.type === 'TITLE',
+          'bg-gray-500': item.type === 'NOTE'
+        }"
+      >
+        {{ item.type === 'TITLE' ? 'T' : 'N' }}
+      </span>
     </div>
-    
-    <!-- Indicateur de type pour les autres types -->
-    <span 
-      v-else
-      class="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white"
-      :class="{
-        'bg-purple-500': item.type === 'TITLE',
-        'bg-gray-500': item.type === 'NOTE'
-      }"
-    >
-      {{ item.type === 'TITLE' ? 'T' : 'N' }}
-    </span>
 
 
 
@@ -131,7 +150,8 @@ const props = defineProps({
   allItems: {
     type: Array,
     default: () => []
-  }
+  },
+  // Plus besoin de collapsedParents car on utilise les champs du modèle
 })
 
 const emit = defineEmits([
@@ -142,7 +162,8 @@ const emit = defineEmits([
   'move',
   'paste-lines',
   'clear-selection',
-  'refresh'
+  'refresh',
+  'toggle-collapse'
 ])
 
 // Refs
@@ -161,6 +182,21 @@ const showDeleteDialog = ref(false)
 watch(() => props.item.content, (newContent) => {
   localContent.value = newContent || ''
 })
+
+// Computed properties for collapse functionality
+const hasChildren = computed(() => {
+  // Vérifier s'il y a des enfants directs dans allItems
+  return props.allItems.some(item => item.parentId === props.item.id)
+})
+
+const isCollapsed = computed(() => {
+  return !props.item.expanded
+})
+
+// Methods for collapse functionality
+function toggleCollapse() {
+  emit('toggle-collapse', props.item.id)
+}
 
 // Methods
 function handleInput() {
@@ -258,6 +294,26 @@ function handleKeyDown(event) {
       focusAdjacentItem(1)
       break
       
+    case 'ArrowLeft':
+      // Si c'est un parent et qu'on est au début de l'input
+      if (hasChildren.value && contentInput.value.selectionStart === 0) {
+        event.preventDefault()
+        if (!isCollapsed.value) {
+          toggleCollapse()
+        }
+      }
+      break
+      
+    case 'ArrowRight':
+      // Si c'est un parent et qu'on est au début de l'input
+      if (hasChildren.value && contentInput.value.selectionStart === 0) {
+        event.preventDefault()
+        if (isCollapsed.value) {
+          toggleCollapse()
+        }
+      }
+      break
+      
     case 'Tab':
       if (props.hasMultipleSelection) {
         return 
@@ -294,18 +350,28 @@ async function createNewLine() {
     // Calculer l'ordre pour insérer après la tâche actuelle
     // L'API gérera automatiquement le décalage des éléments existants
     const newOrder = Math.floor((props.item.order || 0)) + 1
+    const currentLevel = props.item.level || 0
+    
+    // Calculer le parentId pour le nouvel élément
+    let newParentId = props.parentId // Par défaut, le parent du projet
+    
+    if (currentLevel > 0) {
+      // Si l'élément courant a un niveau > 0, le nouvel élément aura le même parent
+      newParentId = props.item.parentId
+    }
     
     const newTodo = await $fetch('/api/data/add', {
       method: 'POST',
       body: {
         type: 'todo',
-        parentId: props.parentId,
+        parentId: props.parentId, // Parent du projet
         count: 1,
         data: {
           content: '',
           type: 'TASK',
-          level: props.item.level || 0,
-          order: newOrder
+          level: currentLevel,
+          order: newOrder,
+          parentId: newParentId // Parent de la todo (peut être null ou un autre todo)
         }
       }
     })

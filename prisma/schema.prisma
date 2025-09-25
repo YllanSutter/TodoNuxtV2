@@ -67,6 +67,8 @@ model Todo {
   completed   Boolean   @default(false)
   order       Int       @default(0)
   level       Int       @default(0) // Indentation level
+  visible     Boolean   @default(true)
+  expanded    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   
