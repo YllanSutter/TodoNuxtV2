@@ -50,6 +50,7 @@ export default defineEventHandler(async (event) => {
     project: ['name', 'description', 'status', 'color', 'order', 'subgroupId', 'templateId'],
     todo: ['content', 'type', 'completed', 'order', 'level', 'projectId', 'parentId'],
     tag: ['name', 'color'],
+    projectTag: ['projectId', 'tagId'],
     template: ['name', 'description'],
     templateItem: ['content', 'type', 'order', 'level', 'templateId', 'parentId']
   }
@@ -91,6 +92,9 @@ export default defineEventHandler(async (event) => {
       title: (index: number) => `Item template ${index}`,
       description: (index: number) => `Description de l'item ${index}`,
       order: (index: number) => index
+    },
+    projectTag: {
+      // Pas de données par défaut, on utilise directement projectId et tagId
     }
   }
 

@@ -47,6 +47,12 @@ function handleTodoUpdate(updatedTodo) {
   }
 }
 
+// Gestionnaire de création d'élément
+function handleElementCreated(result) {
+  console.log('Élément créé, rechargement des données...')
+  loadData() // Recharger les données après création
+}
+
 onMounted(() => {
   loadData()
 })
@@ -73,10 +79,10 @@ watch([() => props.type, () => props.parentId], () => {
             :type="type"
             @itemClick="handleItemClick"
           />
-          <TachesAddElem :type="props.type" :parentId="props.parentId"/>
+          <TachesAddElem :type="props.type" :parentId="props.parentId" @created="handleElementCreated"/>
         </div>
         
-        <TachesAddElem :type="props.type" :parentId="props.parentId" v-else/>
+        <TachesAddElem :type="props.type" :parentId="props.parentId" @created="handleElementCreated" v-else/>
         
       </div>
 

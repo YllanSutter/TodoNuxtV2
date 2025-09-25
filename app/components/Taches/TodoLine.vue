@@ -36,7 +36,7 @@
       >
         <Icon 
           :name="isCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-down'" 
-          class="w-3 h-3 transition-transform duration-200"
+          class="w-3 h-3 transition-transform duration-200 cursor-pointer"
         />
       </button>
       
@@ -352,12 +352,12 @@ async function createNewLine() {
     const newOrder = Math.floor((props.item.order || 0)) + 1
     const currentLevel = props.item.level || 0
     
-    // Calculer le parentId pour le nouvel élément
-    let newParentId = props.parentId // Par défaut, le parent du projet
+    // Calculer le parentId pour le nouvel élément (parentId de todo, pas de projet)
+    let newTodoParentId = null // Par défaut, null pour les éléments de niveau 0
     
     if (currentLevel > 0) {
-      // Si l'élément courant a un niveau > 0, le nouvel élément aura le même parent
-      newParentId = props.item.parentId
+      // Si l'élément courant a un niveau > 0, le nouvel élément aura le même parent todo
+      newTodoParentId = props.item.parentId
     }
     
     const newTodo = await $fetch('/api/data/add', {
@@ -371,7 +371,7 @@ async function createNewLine() {
           type: 'TASK',
           level: currentLevel,
           order: newOrder,
-          parentId: newParentId // Parent de la todo (peut être null ou un autre todo)
+          parentId: newTodoParentId // Parent de la todo (null pour niveau 0, ou ID d'un autre todo)
         }
       }
     })

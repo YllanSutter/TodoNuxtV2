@@ -22,7 +22,8 @@ export default defineEventHandler(async (event) => {
   const parentFieldMap: Record<string, string> = {
     subgroup: 'groupId',
     project: 'subgroupId', // ou 'groupId' selon votre structure
-    todo: 'projectId'
+    todo: 'projectId',
+    projectTag: 'projectId'
   }
   
   try {
