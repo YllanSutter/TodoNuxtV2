@@ -41,6 +41,8 @@
         @clear-selection="handleClearSelection"
         @refresh="handleRefresh"
         @toggle-collapse="handleToggleCollapse"
+        @updated="handleRefresh"
+        @deleted="handleRefresh"
       />
     </div>
           <!-- Header avec actions en lot -->

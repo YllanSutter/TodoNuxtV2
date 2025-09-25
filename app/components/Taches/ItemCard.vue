@@ -77,7 +77,12 @@ const projectStatusList = [
   'ARCHIVED'
 ]
 
-const emit = defineEmits(['itemClick'])
+// Popover state pour édition
+const isPopoverOpen = ref(false)
+
+const emit = defineEmits(['itemClick', 'updated', 'deleted'])
+
+const showDeleteConfirm = ref(false)
 
 function ChangeItem(item){
   // Détermine le type suivant selon la hiérarchie
@@ -92,13 +97,55 @@ function ChangeItem(item){
     default:
       nextType = 'todo' // ou autre selon votre structure
   }
-  
   emit('itemClick', {
     item,
     currentType: props.type,
     nextType,
     parentId: item.id
   })
+}
+
+async function handleUpdate() {
+  try {
+    const response = await $fetch('/api/data/update', {
+      method: 'PUT',
+      body: {
+        type: props.type,
+        id: props.item.id,
+        data: {
+          name: props.item.name,
+          color: props.item.color,
+          status: props.item.status,
+          description: props.item.description
+        }
+      }
+    })
+    emit('updated', response)
+  } catch (error) {
+    alert('Erreur lors de la mise à jour')
+    console.error(error)
+  }
+}
+
+function handleDelete() {
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  try {
+    await $fetch('/api/data/delete', {
+      method: 'DELETE',
+      body: {
+        type: props.type,
+        id: props.item.id
+      }
+    })
+    emit('deleted', props.item.id)
+    showDeleteConfirm.value = false
+  } catch (error) {
+    alert('Erreur lors de la suppression')
+    console.error(error)
+  }
 }
 </script>
 
@@ -127,13 +174,13 @@ function ChangeItem(item){
       <UiCardDescription v-if="item.description">
         {{ item.description }}
       </UiCardDescription>
-      <Popover>
-        <PopoverTrigger as-child>
-        <Button variant="ghost" @click.stop>
-          <Icon  name="tabler:dots"></Icon>
-        </Button>
-        </PopoverTrigger>
-        <PopoverContent class="w-80" @click.stop>
+      <Popover v-model:open="isPopoverOpen">
+              <PopoverTrigger as-child>
+              <Button variant="ghost" @click.stop>
+                <Icon  name="tabler:dots"></Icon>
+              </Button>
+              </PopoverTrigger>
+              <PopoverContent class="w-80" @click.stop>
             <div class="grid grid-cols-3 items-center gap-4">
                 <Label for="name">Nom</Label>
                 <Input
@@ -156,20 +203,38 @@ function ChangeItem(item){
             </div>
             <div v-if="props.type === 'project'" class="grid grid-cols-3 items-center gap-4">
                 <Label for="status">Status</Label>
-                <Select>
+                <Select v-model="item.status">
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup class="lowercase">
                       <SelectLabel class="border-b border-white/10">Status</SelectLabel>
-                      <SelectItem v-for="statut in projectStatusList" :value="statut">
+                      <SelectItem v-for="statut in projectStatusList" :key="statut" :value="statut">
                          {{ statut }}
                       </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
             </div>
+      <div class="flex gap-2 pt-4 justify-end">
+        <Button variant="outline" @click="handleDelete">Supprimer</Button>
+        <Button @click="handleUpdate">Enregistrer</Button>
+      </div>
+            <AlertDialog v-model:open="showDeleteConfirm">
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Voulez-vous vraiment supprimer cet élément et ses enfants ? Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel @click="showDeleteConfirm = false">Annuler</AlertDialogCancel>
+                  <AlertDialogAction @click="confirmDelete">Supprimer</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </PopoverContent>
       </Popover>
     </UiCardHeader>

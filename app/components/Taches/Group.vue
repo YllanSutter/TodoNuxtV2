@@ -53,6 +53,16 @@ function handleElementCreated(result) {
   loadData() // Recharger les données après création
 }
 
+function handleElementUpdated(result) {
+  console.log('Élément update, rechargement des données...')
+  loadData() // Recharger les données après création
+}
+
+function handleElementDeleted(result) {
+  console.log('Élément supprimé, rechargement des données...')
+  loadData() // Recharger les données après création
+}
+
 onMounted(() => {
   loadData()
 })
@@ -78,6 +88,9 @@ watch([() => props.type, () => props.parentId], () => {
             :model="model"
             :type="type"
             @itemClick="handleItemClick"
+            @updated="handleElementUpdated"
+            @deleted="handleElementDeleted"
+            @refresh="loadData"
           />
           <TachesAddElem :type="props.type" :parentId="props.parentId" @created="handleElementCreated"/>
         </div>
