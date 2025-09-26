@@ -97,6 +97,13 @@
   // Popover state pour édition
   const isPopoverOpen = ref(false)
 
+  // Synchroniser les tags sélectionnés à l'ouverture du popup
+  watch(isPopoverOpen, (open) => {
+    if (open && isProject.value) {
+      formData.value.selectedTags = projectTags.value.map(tag => tag.id)
+    }
+  })
+
   const emit = defineEmits(['itemClick', 'updated', 'deleted'])
 
   const showDeleteConfirm = ref(false)
@@ -138,12 +145,21 @@
           }
         }
       })
+      // Mise à jour locale des tags affichés
+      if (isProject.value) {
+        projectTags.value = allTags.value.filter(tag => formData.value.selectedTags.includes(tag.id))
+      }
+      // Feedback visuel
+      showSaveSuccess.value = true
+      setTimeout(() => { showSaveSuccess.value = false }, 1500)
       emit('updated', response)
     } catch (error) {
       alert('Erreur lors de la mise à jour')
       console.error(error)
     }
   }
+// Feedback visuel pour la sauvegarde
+const showSaveSuccess = ref(false)
 
   function handleDelete() {
     showDeleteConfirm.value = true
@@ -181,6 +197,11 @@
           {{ tag.name }}
         </span>
       </div>
+      <transition name="fade">
+        <div v-if="showSaveSuccess" class="absolute left-0 top-full mt-1 px-2 py-1 rounded bg-green-600 text-white text-xs shadow">
+          Modifications enregistrées !
+        </div>
+      </transition>
     </div>
 
     <UiCardHeader class="flex items-center gap-4 justify-between">
