@@ -133,7 +133,8 @@
             name: props.item.name,
             color: props.item.color,
             status: props.item.status,
-            description: props.item.description
+            description: props.item.description,
+            tagIds: isProject.value ? formData.value.selectedTags : undefined
           }
         }
       })

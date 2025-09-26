@@ -37,13 +37,24 @@ export default defineEventHandler(async (event) => {
         break
 
       case 'project':
+        // On extrait les tags si présents
+        const { tagIds, ...projectData } = data
         result = await prisma.project.update({
           where: { id },
           data: {
-            ...data,
+            ...projectData,
             updatedAt: new Date()
           }
         })
+        // Synchronisation des tags du projet
+        if (Array.isArray(tagIds)) {
+          // On supprime tous les liens existants
+          await prisma.projectTag.deleteMany({ where: { projectId: id } })
+          // On ajoute les nouveaux liens
+          for (const tagId of tagIds) {
+            await prisma.projectTag.create({ data: { projectId: id, tagId } })
+          }
+        }
         break
 
       case 'todo':
