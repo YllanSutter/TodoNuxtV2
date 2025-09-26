@@ -305,7 +305,8 @@ onMounted(async () => {
     </div>
 
     <!-- Groupes -->
-    <div v-for="group in hierarchyData.groups" :key="group.id" class="space-y-1">
+    <div v-for="group in hierarchyData.groups" :key="group.id" class="space-y-1 relative">
+      <div class="absolute left-[18px] border-l border-white/5 h-full w-1"></div>
       <div 
         class="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors"
         :class="isSelected(group, 'group') ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-gray-700/50'"
@@ -314,7 +315,7 @@ onMounted(async () => {
         <button
           v-if="getSubgroupsForGroup(group.id).length > 0"
           @click.stop="toggleGroup(group.id)"
-          class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded"
+          class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-900 z-10 relative"
         >
           <svg 
             class="w-3 h-3 transition-transform"
@@ -345,7 +346,7 @@ onMounted(async () => {
             <button
               v-if="getProjectsForSubgroup(subgroup.id).length > 0"
               @click.stop="toggleSubgroup(subgroup.id)"
-              class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded"
+              class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-900 z-10 relative"
             >
               <svg 
                 class="w-3 h-3 transition-transform"
@@ -366,7 +367,7 @@ onMounted(async () => {
           </div>
 
           <!-- Projets -->
-          <div v-if="expandedSubgroups.has(subgroup.id)" class="ml-6 space-y-1">
+          <div v-if="expandedSubgroups.has(subgroup.id)" class="ml-10 space-y-1">
             <div 
               v-for="project in getProjectsForSubgroup(subgroup.id)" 
               :key="project.id"

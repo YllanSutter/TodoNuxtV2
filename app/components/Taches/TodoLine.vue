@@ -71,8 +71,10 @@
       :class="{
         'line-through opacity-60': item.completed,
         'font-bold text-lg my-3': item.type === 'TITLE',
-        'text-sm italic text-gray-600 dark:text-gray-400 test': item.type === 'NOTE'
+        'text-sm italic text-gray-600 dark:text-gray-400 test': item.type === 'NOTE',
+        'opacity-50 pointer-events-none': isDeleted
       }"
+      :disabled="isDeleted"
       @input="handleInput"
       @keydown="handleKeyDown"
       @paste="handlePaste"
@@ -81,7 +83,7 @@
     />
 
     <!-- Actions -->
-    <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+    <div v-if="!isDeleted" class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
       <!-- Sélecteur de type -->
       <button
         @click.stop="changeType('TASK')"
@@ -171,6 +173,7 @@ const contentInput = ref(null)
 
 // State
 const localContent = ref(props.item.content || '')
+const isDeleted = ref(false)
 const isDragging = ref(false)
 const isDragEnabled = ref(false)
 const dropPosition = ref(null) // 'before', 'after', 'inside'
@@ -274,7 +277,6 @@ function deleteItem() {
 
 async function confirmDeleteItem() {
   showDeleteDialog.value = false
-  
   try {
     await $fetch('/api/data/delete', {
       method: 'DELETE',
@@ -283,7 +285,7 @@ async function confirmDeleteItem() {
         type: 'todo'
       }
     })
-    
+    isDeleted.value = true
     emit('delete', props.item.id)
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)

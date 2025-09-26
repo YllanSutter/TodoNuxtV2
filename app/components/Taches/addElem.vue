@@ -192,7 +192,7 @@
     
             <Popover v-model:open="isOpen">
                 <PopoverTrigger as-child>
-                <Button variant="outline">
+                <Button variant="outline" class="text-white bg-transparent">
                     Ajouter {{ props.type }}
                 </Button>
                 </PopoverTrigger>

@@ -229,14 +229,14 @@ const showSaveSuccess = ref(false)
             </div>
             <div v-else class="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
               <button v-for="tag in allTags" :key="tag.id" @click="toggleTag(tag.id)" :class="[
-                              'px-2 py-1 text-xs rounded-full border transition-colors duration-300',
-                              formData.selectedTags.includes(tag.id)
-                                  ? 'bg-primary text-white border-primary'
-                                  : 'bg-background text-muted-foreground border-border hover:bg-white/10'
-                          ]" :style="{
-                              backgroundColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined,
-                              borderColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined
-                          }" type="button">
+                    'px-2 py-1 text-xs rounded-full border transition-colors duration-300 cursor-pointer',
+                    formData.selectedTags.includes(tag.id)
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-background text-muted-foreground border-border hover:bg-white/10'
+                ]" :style="{
+                    backgroundColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined,
+                    borderColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined
+                }" type="button">
                 {{ tag.name }}
               </button>
             </div>
@@ -263,7 +263,7 @@ const showSaveSuccess = ref(false)
           <div v-if="props.type === 'project'" class="grid grid-cols-3 items-center gap-4">
             <Label for="status">Status</Label>
             <Select v-model="item.status">
-              <SelectTrigger>
+              <SelectTrigger class=" cursor-pointer lowercase">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>

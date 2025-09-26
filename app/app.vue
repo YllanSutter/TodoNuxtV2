@@ -20,7 +20,7 @@ function handleBodyNavigation(payload) {
 </script>
 
 <template>
-  <div class="bg-zinc-950 h-svh text-white flex items-stretch">
+  <div class="bg-zinc-950 h-svh text-white flex items-stretch capitalize">
     <ManagerSidebar
       :selectedItemId="selectedItemId"
       :selectedType="selectedType"
