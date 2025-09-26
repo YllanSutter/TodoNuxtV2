@@ -26,6 +26,22 @@ function shadeColor(color, percent) {
   return `rgb(${R},${G},${B})`;
 }
 
+// Calcule la luminosité d'une couleur hex
+function getLum(hex) {
+  let c = hex.substring(1);
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const r = parseInt(c.substring(0,2),16);
+  const g = parseInt(c.substring(2,4),16);
+  const b = parseInt(c.substring(4,6),16);
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+// Calcule l'opacité idéale
+function getOpacity(hex) {
+  const lum = getLum(hex);
+  // Plus la couleur est lumineuse, plus l'opacité baisse
+  return Math.max(0.05, Math.min(0.15, 0.15 - (lum-128)/512));
+}
+
 const selectedColor = ref('#3366ff'); 
 
 // Récupère la couleur de l'item sélectionné à chaque changement d'id/type
@@ -48,6 +64,46 @@ const gradientColors = computed(() => [
   shadeColor(selectedColor.value, -30)
 ]);
 
+const gradientBlobs = computed(() => {
+  const base = selectedColor.value;
+  const op = getOpacity(base);
+  // Amplitude plus forte et centrage
+  return [
+    {
+      color: shadeColor(base, 0),
+      style: {
+        left: `calc(35% + ${(mouse.value.x-0.5)*40}%)`,
+        top: `calc(35% + ${(mouse.value.y-0.5)*40}%)`,
+        opacity: op,
+        width: '42vw',
+        height: '42vw',
+        zIndex: 1
+      }
+    },
+    {
+      color: shadeColor(base, 30),
+      style: {
+        left: `calc(55% + ${(mouse.value.x-0.5)*30}%)`,
+        top: `calc(40% + ${(mouse.value.y-0.5)*30}%)`,
+        opacity: op*0.8,
+        width: '38vw',
+        height: '38vw',
+        zIndex: 2
+      }
+    },
+    {
+      color: shadeColor(base, -30),
+      style: {
+        left: `calc(35% + ${(mouse.value.x-0.5)*50}%)`,
+        top: `calc(25% + ${(mouse.value.y-0.5)*50}%)`,
+        opacity: op*0.7,
+        width: '40vw',
+        height: '40vw',
+        zIndex: 3
+      }
+    }
+  ];
+});
 
 const emit = defineEmits(['sidebarSelect'])
 
@@ -107,48 +163,45 @@ function handleNavigate(payload) {
   })
 }
 
+// Suivi de la souris
+const mouse = ref({x: 0.5, y: 0.5});
+function handleMouseMove(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  mouse.value.x = (e.clientX - rect.left) / rect.width;
+  mouse.value.y = (e.clientY - rect.top) / rect.height;
+}
+
 </script>
 
 <template>
-    <div class="w-5/6 p-8 grid gap-2 items-start content-start relative">
-      <div class="absolute w-full h-full left-0 top-0 grid grid-cols-3 items-center gradientParent opacity-50 pointer-events-none z-[0] overflow-hidden">
-        <div
-          v-for="(color, i) in gradientColors"
-          :key="i"
-          class="gradient-box h-[20vw] w-[20vw]"
-          :style="{ backgroundColor: color }"
-        ></div>
-      </div>
-      <div class="z-10 relative">
-        <NavigationBreadcrumb 
-            mode="horizontal"
-            :currentType="currentType"
-            :currentParentId="currentParentId"
-            :selectedItemId="selectedItemId"
-            :selectedType="selectedType"
-            @navigate="handleNavigate"
-          />
-
-        <TachesGroup 
-          :type="currentType" 
-          :parentId="currentParentId"
-          model="card"
-          @navigate="handleNavigate"
-        />
+  <div class="w-5/6 p-8 grid gap-2 items-start content-start relative" @mousemove="handleMouseMove">
+    <div v-if="props.selectedType !== 'project'" class="fixed w-full h-full left-0 top-0 pointer-events-none z-[0] overflow-hidden">
+      <div v-for="(blob, i) in gradientBlobs" :key="i"
+        class="gradient-blob"
+        :style="{ backgroundColor: blob.color, ...blob.style, position: 'absolute', borderRadius: '50%', filter: 'blur(75px)', mixBlendMode: 'screen'}"
+      ></div>
+    </div>
+    <div class="z-10 relative">
+      <NavigationBreadcrumb 
+        mode="horizontal"
+        :currentType="currentType"
+        :currentParentId="currentParentId"
+        :selectedItemId="selectedItemId"
+        :selectedType="selectedType"
+        @navigate="handleNavigate"
+      />
+      <TachesGroup 
+        :type="currentType" 
+        :parentId="currentParentId"
+        model="card"
+        @navigate="handleNavigate"
+      />
     </div>
   </div>
 </template>
 
 <style>
-.gradient-box {
-  border-radius: 50%;
-  filter: blur(75px);
-  mix-blend-mode: screen;
-  animation: float 4s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-50px) scale(1.1); }
+.gradient-blob {
+  pointer-events: none;
 }
 </style>
