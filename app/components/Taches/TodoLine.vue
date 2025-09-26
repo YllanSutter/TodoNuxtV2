@@ -616,57 +616,52 @@ function findChildrenItems() {
 
 async function updateChildrenIndentation(children, levelDelta) {
   try {
-    // Utiliser les données locales au lieu d'un appel API
-    const allItems = props.allItems
-    
-    const updatePromises = children.map((child) => {
-      const newChildLevel = Math.max(0, (child.level || 0) + levelDelta)
-      
-      // Calculer le nouveau parentId pour cet enfant
-      let newChildParentId = null
-      if (newChildLevel > 0) {
-        const childIndex = allItems.findIndex(item => item.id === child.id)
-        if (childIndex !== -1) {
-          const parentLevel = newChildLevel - 1
-          
-          // Chercher en remontant un élément avec le niveau parent
-          for (let i = childIndex - 1; i >= 0; i--) {
-            const potentialParent = allItems[i]
-            const potentialParentLevel = (potentialParent.level || 0) + (potentialParent.id === props.item.id ? levelDelta : 0)
-            
-            if (potentialParentLevel === parentLevel) {
-              newChildParentId = potentialParent.id
-              break
-            }
+    const allItems = props.allItems;
+    // On va garder une copie locale des items pour suivre les changements de parentId/level
+    let updatedItems = allItems.map(item => ({ ...item }));
+    // On crée une map id -> item pour accès rapide
+    const itemMap = new Map(updatedItems.map(item => [item.id, item]));
+
+    // On applique le delta à tous les enfants dans l'ordre
+    for (const child of children) {
+      // Nouveau niveau
+      const newChildLevel = Math.max(0, (child.level || 0) + levelDelta);
+      // Trouver le parent le plus proche au-dessus avec niveau = newChildLevel - 1
+      const childIndex = updatedItems.findIndex(item => item.id === child.id);
+      let newChildParentId = null;
+      if (newChildLevel > 0 && childIndex !== -1) {
+        for (let i = childIndex - 1; i >= 0; i--) {
+          const potentialParent = updatedItems[i];
+          const potentialParentLevel = potentialParent.level;
+          if (potentialParentLevel === newChildLevel - 1) {
+            newChildParentId = potentialParent.id;
+            break;
           }
         }
       }
-      
-      return $fetch('/api/data/update', {
+      // Met à jour la copie locale
+      itemMap.get(child.id).level = newChildLevel;
+      itemMap.get(child.id).parentId = newChildParentId;
+      // Met à jour dans la BDD
+      await $fetch('/api/data/update', {
         method: 'PUT',
         body: {
           id: child.id,
           type: 'todo',
-          data: { 
+          data: {
             level: newChildLevel,
             parentId: newChildParentId
           }
         }
-      }).then(() => {
-        // Émettre la mise à jour pour chaque enfant individuellement
-        const updatedChild = { 
-          ...child, 
-          level: newChildLevel,
-          parentId: newChildParentId
-        }
-        emit('update', updatedChild)
-        return updatedChild
-      })
-    })
-    
-    await Promise.all(updatePromises)
+      });
+      emit('update', {
+        ...child,
+        level: newChildLevel,
+        parentId: newChildParentId
+      });
+    }
   } catch (error) {
-    console.error('Erreur lors de la mise à jour des enfants:', error)
+    console.error('Erreur lors de la mise à jour des enfants:', error);
   }
 }
 
