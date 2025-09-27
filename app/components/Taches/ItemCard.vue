@@ -185,7 +185,16 @@ const showSaveSuccess = ref(false)
 
 <template>
   <UiCard @click="(e) => { e.stopPropagation(); ChangeItem(item); }"
-    class="transition-all duration-300 hover:bg-white/5 cursor-pointer relative">
+    class="transition-all duration-300 cursor-pointer relative group">
+    <div class="wrapBorder opacity-0 group-hover:opacity-100 absolute size-full top-0 left-0 ">
+      <div class="degrade-border absolute w-full h-[2px] z-10 top-0 left-0 pointer-events-none transition-all duration-700 border-anim-top" :style="{backgroundImage: `linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 37.5%, ${item.color || '#ff3366'} 50%, rgba(255,255,255,0) 62.5%, rgba(255,255,255,0) 100%)`, backgroundSize: '400% 100%'}" ></div>
+      <div class="degrade-border absolute w-[2px] h-full z-10 top-0 right-0 pointer-events-none transition-all duration-700 border-anim-right" :style="{backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 37.5%, ${item.color || '#ff3366'} 50%, rgba(255,255,255,0) 62.5%, rgba(255,255,255,0) 100%)`, backgroundSize: '100% 400%'}" ></div>
+      <div class="degrade-border absolute w-full h-[2px] z-10 bottom-0 left-0 pointer-events-none transition-all duration-700 border-anim-bottom" :style="{backgroundImage: `linear-gradient(270deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 37.5%, ${item.color || '#ff3366'} 50%, rgba(255,255,255,0) 62.5%, rgba(255,255,255,0) 100%)`, backgroundSize: '400% 100%'}" ></div>
+      <div class="degrade-border absolute w-[2px] h-full z-10 top-0 left-0 pointer-events-none transition-all duration-700 border-anim-left" :style="{backgroundImage: `linear-gradient(0deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 37.5%, ${item.color || '#ff3366'} 50%, rgba(255,255,255,0) 62.5%, rgba(255,255,255,0) 100%)`, backgroundSize: '100% 400%'}" ></div>
+    </div>
+    <div class="cardHover absolute size-full top-0 left-0 overflow-hidden pointer-events-none">
+      <div class="absolute transition-all duration-300 size-full top-0 -left-100 bg-white/3 scale-0 group-hover:scale-100 group-hover:left-0"></div>
+    </div>
     <!-- Tags pour les projets -->
     <div v-if="isProject && (projectTags.length > 0 || isLoadingTags)" class="absolute -top-3 left-2">
       <div v-if="isLoadingTags" class="text-xs text-muted-foreground">
@@ -311,3 +320,105 @@ const showSaveSuccess = ref(false)
     </UiCardContent>
   </UiCard>
 </template>
+
+<style scoped>
+.degrade-border {
+  background-position: 0% 0%;
+}
+.border-anim-top {
+  animation: move-gradient-x-reverse 8s linear infinite;
+  animation-delay: 0s;
+}
+.border-anim-right {
+  animation: move-gradient-y-reverse 8s linear infinite;
+  animation-delay: 2s;
+}
+.border-anim-bottom {
+  animation: move-gradient-x 8s linear infinite;
+  animation-delay: 4s;
+}
+.border-anim-left {
+  animation: move-gradient-y 8s linear infinite;
+  animation-delay: 6s;
+}
+@keyframes move-gradient-x {
+  0% {
+    background-position: 0% 0%;
+    opacity: 0.15;
+  }
+  0.01% {
+    opacity: 1;
+  }
+  25% {
+    background-position: 100% 0%;
+    opacity: 1;
+  }
+  25.01% {
+    opacity: 0.15;
+  }
+  100% {
+    background-position: 0% 0%;
+    opacity: 0.15;
+  }
+}
+@keyframes move-gradient-x-reverse {
+  0% {
+    background-position: 100% 0%;
+    opacity: 0.15;
+  }
+  0.01% {
+    opacity: 1;
+  }
+  25% {
+    background-position: 0% 0%;
+    opacity: 1;
+  }
+  25.01% {
+    opacity: 0.15;
+  }
+  100% {
+    background-position: 100% 0%;
+    opacity: 0.15;
+  }
+}
+@keyframes move-gradient-y {
+  0% {
+    background-position: 0% 0%;
+    opacity: 0.15;
+  }
+  0.01% {
+    opacity: 1;
+  }
+  25% {
+    background-position: 0% 100%;
+    opacity: 1;
+  }
+  25.01% {
+    opacity: 0.15;
+  }
+  100% {
+    background-position: 0% 0%;
+    opacity: 0.15;
+  }
+}
+@keyframes move-gradient-y-reverse {
+  0% {
+    background-position: 0% 100%;
+    opacity: 0.15;
+  }
+  0.01% {
+    opacity: 1;
+  }
+  25% {
+    background-position: 0% 0%;
+    opacity: 1;
+  }
+  25.01% {
+    opacity: 0.15;
+  }
+  100% {
+    background-position: 0% 100%;
+    opacity: 0.15;
+  }
+}
+</style>

@@ -367,7 +367,7 @@ onMounted(async () => {
           </div>
 
           <!-- Projets -->
-          <div v-if="expandedSubgroups.has(subgroup.id)" class="ml-10 space-y-1">
+          <div v-if="expandedSubgroups.has(subgroup.id)" class="ml-5 space-y-1">
             <div 
               v-for="project in getProjectsForSubgroup(subgroup.id)" 
               :key="project.id"
@@ -376,10 +376,7 @@ onMounted(async () => {
               @click="navigateToItem({ ...project, type: 'project' })"
             >
               <div class="w-3 flex justify-center">
-                <div 
-                  class="w-3 h-3 rounded-full"
-                  :style="{ backgroundColor: project.color }"
-                ></div>
+               
               </div>
               <span>{{ project.name || `Projet #${project.id}` }}</span>
             </div>
