@@ -427,8 +427,23 @@ function handleDragHandleMouseDown(event) {
 }
 
 function copyToClipboard() {
-  const textToCopy = `${'  '.repeat(props.item.level || 0)}${props.item.content}`
-  navigator.clipboard.writeText(textToCopy)
+  const input = contentInput.value;
+  const selection = window.getSelection();
+  // Si plusieurs lignes sont sélectionnées, on copie tout (comportement existant)
+  if (props.hasMultipleSelection) {
+    const textToCopy = `${'  '.repeat(props.item.level || 0)}${props.item.content}`;
+    navigator.clipboard.writeText(textToCopy);
+    return;
+  }
+  // Si une sélection texte existe dans l'input, on copie seulement cette sélection
+  if (input && input.selectionStart !== input.selectionEnd) {
+    const selectedText = input.value.substring(input.selectionStart, input.selectionEnd);
+    navigator.clipboard.writeText(selectedText);
+    return;
+  }
+  // Sinon, on copie toute la ligne
+  const textToCopy = `${'  '.repeat(props.item.level || 0)}${props.item.content}`;
+  navigator.clipboard.writeText(textToCopy);
 }
 
 function handlePaste(event) {
