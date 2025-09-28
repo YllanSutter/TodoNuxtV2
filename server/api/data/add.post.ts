@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     project: {
       name: (index: number) => `Nouveau projet ${index}`,
       description: () => '',
-      status: () => 'DRAFT',
+      status: () => 'ACTIVE',
       color: () => `#${Math.floor(Math.random()*16777215).toString(16)}`
     },
     todo: {

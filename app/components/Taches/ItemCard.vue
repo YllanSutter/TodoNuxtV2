@@ -47,11 +47,9 @@ watch(() => props.item.id, () => {
 
   // Liste des statuts de projet (enum du schema.prisma)
   const projectStatusList = [
-    'DRAFT',
     'ACTIVE',
-    'ON_HOLD',
-    'COMPLETED',
-    'ARCHIVED'
+    'ARCHIVED',
+    'TEMPLATE'
   ]
 
   // Popover state pour édition
