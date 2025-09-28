@@ -15,7 +15,7 @@
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"
     @drop="handleDrop"
-    @click="handleClick"
+    @click="emitSelect"
   >
     <!-- Icône de déplacement -->
     <div
@@ -178,6 +178,15 @@ const isDragging = ref(false)
 const isDragEnabled = ref(false)
 const dropPosition = ref(null) // 'before', 'after', 'inside'
 const updateTimeout = ref(null)
+
+// Ajout d'un log sur l'émission de l'événement 'select'
+function emitSelect() {
+  console.log('[TodoLine.vue] emit select:', props.item.id)
+  emit('select', props.item.id)
+}
+
+// Exemple d'utilisation : à placer sur le click principal de la ligne
+// <div @click="emitSelect"> ... </div>
 const showDeleteDialog = ref(false)
 
 // Watchers

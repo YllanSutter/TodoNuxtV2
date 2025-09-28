@@ -124,7 +124,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'refresh'])
+const emit = defineEmits(['update', 'refresh', 'select'])
 
 // Refs
 const todoListRef = ref(null)
@@ -454,6 +454,8 @@ function handleSelect(selection) {
     } else {
       selectedItems.value.splice(index, 1)
     }
+    // Émettre l'id sélectionné vers le parent (Group.vue)
+    emit('select', selection)
   }
 }
 

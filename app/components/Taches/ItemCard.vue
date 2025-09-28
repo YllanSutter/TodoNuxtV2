@@ -81,12 +81,24 @@ watch(() => props.item.id, () => {
       default:
         nextType = 'todo' // ou autre selon votre structure
     }
-    emit('itemClick', {
-      item,
-      currentType: props.type,
-      nextType,
-      parentId: item.id
-    })
+    // Ajout log projet
+    if (props.type === 'project') {
+      console.log('[ItemCard.vue] Projet sélectionné:', item.id)
+      emit('itemClick', {
+        item,
+        currentType: props.type,
+        nextType,
+        parentId: item.id,
+        projectId: item.id // Ajout explicite de l'id projet
+      })
+    } else {
+      emit('itemClick', {
+        item,
+        currentType: props.type,
+        nextType,
+        parentId: item.id
+      })
+    }
   }
 
   async function handleUpdate() {

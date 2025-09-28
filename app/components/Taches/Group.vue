@@ -21,6 +21,7 @@ const emit = defineEmits(['navigate'])
 const items = ref([])
 const error = ref(null)
 const project = ref(null)
+const selectedProjectId = ref(null)
 
 // Fonction pour charger les données
 async function loadData(type = props.type, parentId = props.parentId) {
@@ -32,14 +33,21 @@ async function loadData(type = props.type, parentId = props.parentId) {
     const result = await $fetch(url)
     items.value = result
 
-    // Si on est en mode todo, récupérer le projet associé
-    if (type === 'todo' && items.value.length > 0 && items.value[0].projectId) {
-      const projectId = items.value[0].projectId
-      try {
-        const projRes = await $fetch(`/api/data?type=project&id=${projectId}`)
-        // projRes peut être un tableau ou un objet selon l'API
-        project.value = Array.isArray(projRes) ? projRes[0] : projRes
-      } catch (e) {
+    // Si on est en mode todo, récupérer le projet lié à l'id sélectionné (selectedProjectId)
+    if (type === 'todo') {
+      let projectId = selectedProjectId.value || (items.value[0]?.projectId)
+      if (projectId) {
+        try {
+          const allProjects = await $fetch(`/api/data?type=project`)
+          if (Array.isArray(allProjects)) {
+            project.value = allProjects.find(p => p.id === projectId) || null
+          } else {
+            project.value = null
+          }
+        } catch (e) {
+          project.value = null
+        }
+      } else {
         project.value = null
       }
     } else {
@@ -47,19 +55,35 @@ async function loadData(type = props.type, parentId = props.parentId) {
     }
   } catch (e) {
     error.value = e
+    console.log('[Group.vue] erreur chargement items:', e)
   }
 }
 
 // Gestionnaire de clic sur un item
 function handleItemClick(payload) {
+  if (props.type === 'project' && payload?.projectId) {
+    selectedProjectId.value = payload.projectId
+    loadData('todo', props.parentId)
+  }
   emit('navigate', payload)
 }
+
+// (plus besoin de loadProjectById, tout passe par selectedProjectId)
 
 // Gestionnaire de mise à jour des todos
 function handleTodoUpdate(updatedTodo) {
   const index = items.value.findIndex(item => item.id === updatedTodo.id)
   if (index !== -1) {
     items.value[index] = { ...items.value[index], ...updatedTodo }
+  }
+}
+
+
+// Gestionnaire de sélection d'une todo depuis TodoContainer
+function handleTodoSelect(projectId) {
+  if (props.type === 'todo' && projectId) {
+    selectedProjectId.value = projectId
+    loadData('todo', props.parentId)
   }
 }
 
@@ -129,7 +153,15 @@ watch([() => props.type, () => props.parentId], () => {
           :parent-id="props.parentId"
           @update="handleTodoUpdate"
           @refresh="loadData"
+          @select="handleTodoSelect"
         />
+// Gestionnaire de sélection d'une todo depuis TodoContainer
+function handleTodoSelect(todoId) {
+  if (props.type === 'todo' && todoId) {
+    selectedTodoId.value = todoId
+    loadData('todo', props.parentId)
+  }
+}
       </div>
 
       <div v-else>

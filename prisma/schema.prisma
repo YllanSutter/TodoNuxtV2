@@ -42,7 +42,7 @@ model Project {
   id          String        @id @default(cuid())
   name        String
   description String?
-  status      ProjectStatus @default(DRAFT)
+  status      ProjectStatus @default(ACTIVE)
   color       String        @default("#10b981") // Default emerald color
   order       Int           @default(0)
   createdAt   DateTime      @default(now())
@@ -156,9 +156,7 @@ enum TodoType {
 }
 
 enum ProjectStatus {
-  DRAFT
   ACTIVE
-  ON_HOLD
-  COMPLETED
   ARCHIVED
+  TEMPLATE
 }
