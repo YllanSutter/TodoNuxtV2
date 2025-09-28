@@ -1,3 +1,4 @@
+
 <script setup>
 const props = defineProps({
   item: {
@@ -13,161 +14,36 @@ const props = defineProps({
   }
 })
 
-// Subgroups pour le select
-const subgroupList = ref([])
-const selectedSubgroup = ref(null)
+import TagSelector from './TagSelector.vue'
+import SubgroupSelect from './SubgroupSelect.vue'
+import { useProjectTags } from '../../composables/useProjectTags'
+import { useSubgroups } from '../../composables/useSubgroups'
 
-// Récupérer la liste des subgroups du même group
-async function loadSubgroups() {
-  if (!isProject.value) {
-    subgroupList.value = []
-    selectedSubgroup.value = null
-    return
-  }
-  let subgroups = []
-  // Récupération du subgroupId pour projet
-  let currentSubgroupId = isProject.value ? props.item.subgroupId : props.item.parentId
-  if (!props.item.subgroupId) {
-    // Fallback : récupère tous les subgroups
-    try {
-      subgroups = await $fetch('/api/data', {
-        method: 'GET',
-        query: { type: 'subgroup' }
-      })
-      console.log('subgroups (fallback, pas de subgroupId):', subgroups)
-    } catch (e) {
-      console.warn('Erreur fetch subgroups fallback', e)
-    }
-    subgroupList.value = Array.isArray(subgroups) ? subgroups : []
-    selectedSubgroup.value = null
-    return
-  }
-  // Récupère le subgroup actuel
-  let groupId = null
-  try {
-    let subgroup = await $fetch('/api/data', {
-      method: 'GET',
-      query: { type: 'subgroup', id: currentSubgroupId }
-    })
-    // Si le résultat est un tableau, filtre pour trouver le bon subgroup
-    if (Array.isArray(subgroup)) {
-      subgroup = subgroup.find(sg => sg.id === currentSubgroupId)
-    }
-    console.log('subgroup actuel (filtré):', subgroup)
-    if (subgroup && subgroup.groupId) {
-      groupId = subgroup.groupId
-    }
-  } catch (e) {
-    console.warn('Erreur fetch subgroup actuel', e)
-  }
-  // Récupère tous les subgroups du même group
-  if (groupId) {
-    try {
-      subgroups = await $fetch('/api/data', {
-        method: 'GET',
-        query: { type: 'subgroup', groupId: groupId }
-      })
-      console.log('subgroups du group:', subgroups)
-    } catch (e) {
-      console.warn('Erreur fetch subgroups du group', e)
-    }
-  } else {
-    subgroupList.value = []
-    selectedSubgroup.value = currentSubgroupId
-    return
-  }
-  // Filtrage supplémentaire côté frontend pour garantir qu'on a bien les bons subgroups
-  if (Array.isArray(subgroups) && groupId) {
-    subgroupList.value = subgroups.filter(sg => sg.groupId === groupId)
-  } else {
-    subgroupList.value = Array.isArray(subgroups) ? subgroups : []
-  }
-  selectedSubgroup.value = currentSubgroupId
-}
+// Formulaire réactif pour édition
+const formData = ref({
+  name: props.item.name || '',
+  color: props.item.color || '',
+  description: props.item.description || '',
+  selectedTags: []
+})
+
+const isProject = computed(() => props.type === 'project')
+const { projectTags, allTags, isLoadingTags, loadProjectTags } = useProjectTags(props.item, isProject)
+const { subgroupList, selectedSubgroup, loadSubgroups } = useSubgroups(props.item, isProject)
 
 onMounted(() => {
   if (isProject.value) {
-    console.log('onMounted ItemCard', { isProject: isProject.value, subgroupId: props.item.subgroupId })
     loadSubgroups()
+    loadProjectTags()
   }
 })
 watch(() => props.item.id, () => {
   if (isProject.value) {
     loadSubgroups()
+    loadProjectTags()
   }
 })
 
-  // State pour les tags du projet
-  const projectTags = ref([])
-  const isLoadingTags = ref(false)
-
-  // Computed pour savoir si c'est un projet
-  const isProject = computed(() => props.type === 'project')
-
-  // Définir allTags en tant que ref pour l'exposer à l'instance
-  const allTags = ref([])
-
-  // Formulaire réactif
-  const formData = ref({
-    name: '',
-    color: '',
-    selectedTags: []
-  })
-
-  function toggleTag(tagId) {
-    const index = formData.value.selectedTags.indexOf(tagId)
-    if (index > -1) {
-      formData.value.selectedTags.splice(index, 1)
-    } else {
-      formData.value.selectedTags.push(tagId)
-    }
-  }
-
-  // Charger les tags du projet et tous les tags si c'est un projet
-  async function loadProjectTags() {
-    if (!isProject.value || !props.item.id) return
-    try {
-      isLoadingTags.value = true
-      // Récupérer les ProjectTag liés à ce projet
-      const projectTagsData = await $fetch('/api/data', {
-        method: 'GET',
-        query: {
-          type: 'projectTag',
-          parentId: props.item.id
-        }
-      })
-      // Récupérer tous les tags et filtrer ceux qui correspondent
-      const allTagsData = await $fetch('/api/data', {
-        method: 'GET',
-        query: {
-          type: 'tag'
-        }
-      })
-      allTags.value = allTagsData;
-      const projectTagIds = projectTagsData.map(pt => pt.tagId)
-      projectTags.value = allTagsData.filter(tag => projectTagIds.includes(tag.id))
-    } catch (error) {
-      console.error('Erreur lors du chargement des tags du projet:', error)
-      projectTags.value = []
-      allTags.value = []
-    } finally {
-      isLoadingTags.value = false
-    }
-  }
-
-  // Charger les tags au montage si c'est un projet
-  onMounted(() => {
-    if (isProject.value) {
-      loadProjectTags()
-    }
-  })
-
-  // Watcher pour recharger les tags si l'item change
-  watch(() => props.item.id, () => {
-    if (isProject.value) {
-      loadProjectTags()
-    }
-  })
 
   // Liste des statuts de projet (enum du schema.prisma)
   const projectStatusList = [
@@ -316,28 +192,7 @@ const showSaveSuccess = ref(false)
         <PopoverContent class="w-80 grid gap-2" @click.stop>
           <!-- Section Tags (seulement pour les projets) -->
           <div v-if="isProject" class="grid gap-2 mb-4">
-            <div v-if="isLoadingTags" class="text-sm text-muted-foreground">
-              Chargement des tags...
-            </div>
-            <div v-else-if="allTags.length === 0" class="text-sm text-muted-foreground">
-              Aucun tag disponible. Créez d'abord des tags.
-            </div>
-            <div v-else class="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-              <button v-for="tag in allTags" :key="tag.id" @click="toggleTag(tag.id)" :class="[
-                    'px-2 py-1 text-xs rounded-full border transition-colors duration-300 cursor-pointer',
-                    formData.selectedTags.includes(tag.id)
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-background text-muted-foreground border-border hover:bg-white/10'
-                ]" :style="{
-                    backgroundColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined,
-                    borderColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined
-                }" type="button">
-                {{ tag.name }}
-              </button>
-            </div>
-            <div v-if="formData.selectedTags.length > 0" class="text-xs text-muted-foreground">
-              {{ formData.selectedTags.length }} tag(s) sélectionné(s)
-            </div>
+            <TagSelector v-model="formData.selectedTags" :allTags="allTags" />
           </div>
           <div class="grid grid-cols-3 items-center gap-4">
             <Label for="name">Nom</Label>
@@ -374,19 +229,7 @@ const showSaveSuccess = ref(false)
           <!-- Select Subgroup -->
           <div v-if="props.type === 'project' && subgroupList.length > 0" class="grid grid-cols-3 items-center gap-4">
             <Label for="subgroup">Sous-groupe</Label>
-            <Select v-model="selectedSubgroup">
-              <SelectTrigger class="cursor-pointer lowercase">
-                <SelectValue placeholder="Sélectionner un sous-groupe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup class="lowercase">
-                  <SelectLabel class="border-b border-white/10">Sous-groupe</SelectLabel>
-                  <SelectItem v-for="sg in subgroupList" :key="sg.id" :value="sg.id">
-                    {{ sg.name || `Sous-groupe #${sg.id}` }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <SubgroupSelect v-model="selectedSubgroup" :subgroupList="subgroupList" />
           </div>
           <div class="flex gap-2 pt-4 justify-end">
             <Button variant="outline" @click="handleDelete">Supprimer</Button>
