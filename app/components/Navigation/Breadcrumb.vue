@@ -20,6 +20,10 @@ const props = defineProps({
   selectedType: {
     type: String,
     default: null
+  },
+  refreshKey: {
+    type: [Number, String],
+    default: 0
   }
 })
 
@@ -245,12 +249,18 @@ function isSelected(item, type) {
 }
 
 // Watchers
-watch([() => props.currentType, () => props.currentParentId, () => props.mode], async () => {
+
+// Rafraîchir la navigation quand un groupe, sous-groupe ou projet est créé, supprimé ou modifié
+watch([
+  () => props.currentType,
+  () => props.currentParentId,
+  () => props.mode,
+  () => props.selectedItemId,
+  () => props.selectedType,
+  () => props.refreshKey
+], async () => {
+  await loadHierarchyData()
   if (props.mode === 'horizontal') {
-    // S'assurer que les données sont chargées avant de construire le chemin
-    if (!hierarchyData.value.groups.length) {
-      await loadHierarchyData()
-    }
     buildNavigationPath()
   }
 })

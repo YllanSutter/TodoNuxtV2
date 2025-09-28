@@ -15,18 +15,22 @@
       color: string
     }
 
-     const props = defineProps({
-        type: {
-            type: String,
-            default: 'group'
-        },
-        parentId: {
-            type: [String, Number],
-            default: null
-        }
-     })
+   const props = defineProps({
+    type: {
+      type: String,
+      default: 'group'
+    },
+    parentId: {
+      type: [String, Number],
+      default: null
+    },
+    refreshKey: {
+      type: [Number, String],
+      default: 0
+    }
+   })
 
-     const emit = defineEmits(['created'])
+  const emit = defineEmits(['created', 'refresh'])
 
      // Formulaire réactif
     const formData = ref({
@@ -179,6 +183,7 @@
             
             // Émettre événement pour rafraîchir la liste
             emit('created', result)
+            emit('refresh', Date.now())
             
         } catch (error) {
             console.error('Erreur complète lors de la création:', error)
