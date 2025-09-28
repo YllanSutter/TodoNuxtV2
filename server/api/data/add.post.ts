@@ -180,18 +180,37 @@ export default defineEventHandler(async (event) => {
       if (type === 'project' && data.templateProjectId) {
         createdProject = await model.create({ data: itemData })
         // Récupérer les todos du projet template
-        const templateTodos = await prisma.todo.findMany({ where: { projectId: data.templateProjectId } })
-        // Dupliquer chaque todo dans le nouveau projet
+        const templateTodos = await prisma.todo.findMany({ where: { projectId: data.templateProjectId }, orderBy: { order: 'asc' } })
+        // On va créer une map idTemplate -> idNew
+        const idMap = new Map()
+        // Première passe : créer tous les todos sans parentId
         for (const todo of templateTodos) {
           const { id, projectId, createdAt, updatedAt, ...todoData } = todo
-          await prisma.todo.create({
+          // On retire parentId pour la première passe
+          const { parentId, ...rest } = todoData
+          const newTodo = await prisma.todo.create({
             data: {
-              ...todoData,
+              ...rest,
               projectId: createdProject.id,
+              parentId: null, // temporairement
               createdAt: new Date(),
               updatedAt: new Date()
             }
           })
+          idMap.set(id, newTodo.id)
+        }
+        // Deuxième passe : mettre à jour les parentId
+        for (const todo of templateTodos) {
+          if (todo.parentId) {
+            const newId = idMap.get(todo.id)
+            const newParentId = idMap.get(todo.parentId)
+            if (newId && newParentId) {
+              await prisma.todo.update({
+                where: { id: newId },
+                data: { parentId: newParentId }
+              })
+            }
+          }
         }
         results.push(createdProject)
       } else if (type === 'project') {
