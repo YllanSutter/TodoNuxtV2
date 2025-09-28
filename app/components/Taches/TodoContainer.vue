@@ -485,11 +485,22 @@ function increaseIndent() {
 }
 
 async function copySelectedItems() {
+  // Si une seule todo est sélectionnée et qu'un input est focus avec une sélection texte, ne rien faire ici
+  if (selectedItems.value.length === 1) {
+    const activeElement = document.activeElement
+    if (activeElement && activeElement.tagName === 'INPUT') {
+      const input = activeElement
+      if (input.selectionStart !== input.selectionEnd) {
+        // On laisse le navigateur gérer le copier/coller natif
+        return
+      }
+    }
+  }
+  // Sinon, copier la sélection complète
   const itemsToCopy = localItems.value.filter(item => selectedItems.value.includes(item.id))
   const textLines = itemsToCopy.map(item => 
     `${'  '.repeat(item.level || 0)}${item.content}`
   ).join('\n')
-  
   try {
     await navigator.clipboard.writeText(textLines)
     console.log('Items copiés dans le presse-papiers')
