@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 export default defineEventHandler(async (event) => {
-  const { type = 'group', parentId } = getQuery(event)
+  const { type = 'group', parentId, status } = getQuery(event)
   
   // Map des modèles disponibles
   const modelMap: Record<string, any> = {
@@ -43,11 +43,15 @@ export default defineEventHandler(async (event) => {
       const parentField = parentFieldMap[type as string]
       whereClause[parentField] = parentId
     }
-    
+    // Ajout du filtre status pour les enums valides
+    if (type === 'project' && status && ['ACTIVE','ARCHIVED','TEMPLATE'].includes(String(status))) {
+      whereClause.status = status
+    }
+
     const data = await model.findMany({
       where: Object.keys(whereClause).length > 0 ? whereClause : undefined
     })
-    
+
     return data || []
   } catch (error: any) {
     if (error.statusCode === 400) {

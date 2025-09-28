@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
     import { Button } from "@/components/ui/button"
     import { Input } from "@/components/ui/input"
@@ -28,11 +29,11 @@
      const emit = defineEmits(['created'])
 
      // Formulaire réactif
-     const formData = ref({
-        name: '',
-        color: '',
-        selectedTags: [] as string[]
-     })
+    const formData = ref({
+      name: '',
+      color: '#6366f1', // couleur par défaut au format #rrggbb
+      selectedTags: [] as string[]
+    })
      const isOpen = ref(false)
      const isLoading = ref(false)
      const availableTags = ref<Tag[]>([])
@@ -90,7 +91,6 @@
              }
            })
          }
-         console.log(`${tagIds.length} tags liés au projet ${projectId}`)
        } catch (error) {
          console.error('Erreur lors de la création des liens projet-tag:', error)
          const errorMessage = error instanceof Error ? error.message : String(error)
@@ -116,6 +116,10 @@
                 data.color = formData.value.color.trim()
             }
 
+            // Ajout du templateProjectId si sélectionné
+            if (isProject.value && selectedTemplateProject.value) {
+              data.templateProjectId = selectedTemplateProject.value
+            }
             const payload = {
                 type: props.type,
                 count: 1,
@@ -184,6 +188,25 @@
             isLoading.value = false
         }
     }
+    // Liste des projets template du sous-groupe
+const templateProjects = ref<any[]>([])
+const selectedTemplateProject = ref<string|null>(null)
+
+// Charger les projets template du sous-groupe courant
+async function loadTemplateProjects() {
+  if (isProject.value && props.parentId) {
+    const res = await $fetch(`/api/data?type=project&status=TEMPLATE&subgroupId=${props.parentId}`)
+    templateProjects.value = Array.isArray(res) ? res : []
+  } else {
+    templateProjects.value = []
+  }
+}
+
+watch(isOpen, async (open) => {
+  if (open && isProject.value) {
+    await loadTemplateProjects()
+  }
+})
 </script>
 
 <template>
@@ -262,6 +285,24 @@
                             </div>
                         </div>
 
+                        <!-- Select des projets template pour la création -->
+                        <div v-if="isProject && templateProjects.length > 0" class="grid grid-cols-3 items-center gap-4">
+                          <Label for="templateProject">Template projet</Label>
+                          <Select v-model="selectedTemplateProject">
+                            <SelectTrigger class="col-span-2 cursor-pointer">
+                              <SelectValue placeholder="Aucun template" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectLabel>Templates disponibles</SelectLabel>
+                                <SelectItem :value="null">Aucun template</SelectItem>
+                                <SelectItem v-for="proj in templateProjects" :key="proj.id" :value="proj.id">
+                                  {{ proj.name }}
+                                </SelectItem>
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <div class="flex gap-2 pt-2">
                             <Button variant="outline" @click="isOpen = false" :disabled="isLoading">
                                 Annuler

@@ -175,18 +175,48 @@ export default defineEventHandler(async (event) => {
       itemData.createdAt = new Date()
       itemData.updatedAt = new Date()
 
-      console.log(`Tentative de création item ${i}:`, itemData)
-      
-      try {
-        const result = await model.create({
-          data: itemData
+      // Si on crée un projet et qu'un templateProjectId est fourni, dupliquer ses todos
+      let createdProject = null
+      if (type === 'project' && data.templateProjectId) {
+        createdProject = await model.create({ data: itemData })
+        // Récupérer les todos du projet template
+        const templateTodos = await prisma.todo.findMany({ where: { projectId: data.templateProjectId } })
+        // Dupliquer chaque todo dans le nouveau projet
+        for (const todo of templateTodos) {
+          const { id, projectId, createdAt, updatedAt, ...todoData } = todo
+          await prisma.todo.create({
+            data: {
+              ...todoData,
+              projectId: createdProject.id,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          })
+        }
+        results.push(createdProject)
+      } else if (type === 'project') {
+        // Crée le projet et une todo vide
+        createdProject = await model.create({ data: itemData })
+        await prisma.todo.create({
+          data: {
+            content: 'Nouvelle tâche',
+            type: 'TASK',
+            completed: false,
+            order: 0,
+            level: 0,
+            projectId: createdProject.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
         })
-        console.log(`Item ${i} créé avec succès:`, result)
-        results.push(result)
-      } catch (createError) {
-        console.error(`Erreur lors de la création de l'item ${i}:`, createError)
-        console.error('Données qui ont causé l\'erreur:', itemData)
-        // Continuer avec les autres items même si un échoue
+        results.push(createdProject)
+      } else {
+        try {
+          const result = await model.create({ data: itemData })
+          results.push(result)
+        } catch (createError) {
+          // Continuer avec les autres items même si un échoue
+        }
       }
     }
 

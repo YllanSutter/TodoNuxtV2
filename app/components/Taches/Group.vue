@@ -155,13 +155,6 @@ watch([() => props.type, () => props.parentId], () => {
           @refresh="loadData"
           @select="handleTodoSelect"
         />
-// Gestionnaire de sélection d'une todo depuis TodoContainer
-function handleTodoSelect(todoId) {
-  if (props.type === 'todo' && todoId) {
-    selectedTodoId.value = todoId
-    loadData('todo', props.parentId)
-  }
-}
       </div>
 
       <div v-else>

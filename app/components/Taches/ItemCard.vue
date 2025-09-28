@@ -1,4 +1,3 @@
-
 <script setup>
 const props = defineProps({
   item: {
@@ -26,6 +25,7 @@ const formData = ref({
   description: props.item.description || '',
   selectedTags: []
 })
+
 
 const isProject = computed(() => props.type === 'project')
 const { projectTags, allTags, isLoadingTags, loadProjectTags } = useProjectTags(props.item, isProject)
@@ -81,7 +81,6 @@ watch(() => props.item.id, () => {
     }
     // Ajout log projet
     if (props.type === 'project') {
-      console.log('[ItemCard.vue] Projet sélectionné:', item.id)
       emit('itemClick', {
         item,
         currentType: props.type,
@@ -153,6 +152,7 @@ const showSaveSuccess = ref(false)
       console.error(error)
     }
   }
+  
 </script>
 
 <template>
@@ -241,6 +241,7 @@ const showSaveSuccess = ref(false)
             <Label for="subgroup">Sous-groupe</Label>
             <SubgroupSelect v-model="selectedSubgroup" :subgroupList="subgroupList" />
           </div>
+          
           <div class="flex gap-2 pt-4 justify-end">
             <Button variant="outline" @click="handleDelete">Supprimer</Button>
             <Button @click="handleUpdate">Enregistrer</Button>
