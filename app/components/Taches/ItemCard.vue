@@ -1,17 +1,101 @@
 <script setup>
-  const props = defineProps({
-    item: {
-      type: Object,
-      required: true
-    },
-    type: {
-      type: String,
-      default: 'group'
-    },
-    model: {
-      type: String
+const props = defineProps({
+  item: {
+    type: Object,
+    required: true
+  },
+  type: {
+    type: String,
+    default: 'group'
+  },
+  model: {
+    type: String
+  }
+})
+
+// Subgroups pour le select
+const subgroupList = ref([])
+const selectedSubgroup = ref(null)
+
+// Récupérer la liste des subgroups du même group
+async function loadSubgroups() {
+  if (!isProject.value) {
+    subgroupList.value = []
+    selectedSubgroup.value = null
+    return
+  }
+  let subgroups = []
+  // Récupération du subgroupId pour projet
+  let currentSubgroupId = isProject.value ? props.item.subgroupId : props.item.parentId
+  if (!props.item.subgroupId) {
+    // Fallback : récupère tous les subgroups
+    try {
+      subgroups = await $fetch('/api/data', {
+        method: 'GET',
+        query: { type: 'subgroup' }
+      })
+      console.log('subgroups (fallback, pas de subgroupId):', subgroups)
+    } catch (e) {
+      console.warn('Erreur fetch subgroups fallback', e)
     }
-  })
+    subgroupList.value = Array.isArray(subgroups) ? subgroups : []
+    selectedSubgroup.value = null
+    return
+  }
+  // Récupère le subgroup actuel
+  let groupId = null
+  try {
+    let subgroup = await $fetch('/api/data', {
+      method: 'GET',
+      query: { type: 'subgroup', id: currentSubgroupId }
+    })
+    // Si le résultat est un tableau, filtre pour trouver le bon subgroup
+    if (Array.isArray(subgroup)) {
+      subgroup = subgroup.find(sg => sg.id === currentSubgroupId)
+    }
+    console.log('subgroup actuel (filtré):', subgroup)
+    if (subgroup && subgroup.groupId) {
+      groupId = subgroup.groupId
+    }
+  } catch (e) {
+    console.warn('Erreur fetch subgroup actuel', e)
+  }
+  // Récupère tous les subgroups du même group
+  if (groupId) {
+    try {
+      subgroups = await $fetch('/api/data', {
+        method: 'GET',
+        query: { type: 'subgroup', groupId: groupId }
+      })
+      console.log('subgroups du group:', subgroups)
+    } catch (e) {
+      console.warn('Erreur fetch subgroups du group', e)
+    }
+  } else {
+    subgroupList.value = []
+    selectedSubgroup.value = currentSubgroupId
+    return
+  }
+  // Filtrage supplémentaire côté frontend pour garantir qu'on a bien les bons subgroups
+  if (Array.isArray(subgroups) && groupId) {
+    subgroupList.value = subgroups.filter(sg => sg.groupId === groupId)
+  } else {
+    subgroupList.value = Array.isArray(subgroups) ? subgroups : []
+  }
+  selectedSubgroup.value = currentSubgroupId
+}
+
+onMounted(() => {
+  if (isProject.value) {
+    console.log('onMounted ItemCard', { isProject: isProject.value, subgroupId: props.item.subgroupId })
+    loadSubgroups()
+  }
+})
+watch(() => props.item.id, () => {
+  if (isProject.value) {
+    loadSubgroups()
+  }
+})
 
   // State pour les tags du projet
   const projectTags = ref([])
@@ -141,13 +225,15 @@
             color: props.item.color,
             status: props.item.status,
             description: props.item.description,
-            tagIds: isProject.value ? formData.value.selectedTags : undefined
+            tagIds: isProject.value ? formData.value.selectedTags : undefined,
+            subgroupId: isProject.value ? selectedSubgroup.value : props.item.subgroupId
           }
         }
       })
       // Mise à jour locale des tags affichés
       if (isProject.value) {
         projectTags.value = allTags.value.filter(tag => formData.value.selectedTags.includes(tag.id))
+        props.item.subgroupId = selectedSubgroup.value
       }
       // Feedback visuel
       showSaveSuccess.value = true
@@ -280,6 +366,23 @@ const showSaveSuccess = ref(false)
                   <SelectLabel class="border-b border-white/10">Status</SelectLabel>
                   <SelectItem v-for="statut in projectStatusList" :key="statut" :value="statut">
                     {{ statut }}
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          <!-- Select Subgroup -->
+          <div v-if="props.type === 'project' && subgroupList.length > 0" class="grid grid-cols-3 items-center gap-4">
+            <Label for="subgroup">Sous-groupe</Label>
+            <Select v-model="selectedSubgroup">
+              <SelectTrigger class="cursor-pointer lowercase">
+                <SelectValue placeholder="Sélectionner un sous-groupe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup class="lowercase">
+                  <SelectLabel class="border-b border-white/10">Sous-groupe</SelectLabel>
+                  <SelectItem v-for="sg in subgroupList" :key="sg.id" :value="sg.id">
+                    {{ sg.name || `Sous-groupe #${sg.id}` }}
                   </SelectItem>
                 </SelectGroup>
               </SelectContent>
