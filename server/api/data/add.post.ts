@@ -100,7 +100,6 @@ export default defineEventHandler(async (event) => {
 
   try {
     const model = modelMap[type as string]
-    
     if (!model || typeof model.create !== 'function') {
       throw createError({
         statusCode: 400,
@@ -108,29 +107,25 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const results = []
+    const results: any[] = []
     const itemCount = Math.max(1, parseInt(count as string) || 1)
 
-    // Créer les données pour chaque item
     for (let i = 1; i <= itemCount; i++) {
-      const itemData: any = {}
-      
+      const itemData: Record<string, any> = {}
       // Ajouter les données par défaut du schéma
       if (defaultDataSchemas[type as string]) {
         const schema = defaultDataSchemas[type as string]
         for (const [key, valueFunction] of Object.entries(schema)) {
           if (typeof valueFunction === 'function') {
-            itemData[key] = (valueFunction as Function)(i)
+            itemData[key] = valueFunction(i)
           }
         }
       }
-
       // Ajouter le parentId si nécessaire
       if (parentId && parentFieldMap[type as string]) {
         const parentField = parentFieldMap[type as string]
         itemData[parentField] = parentId
       }
-
       // Fusionner avec les données personnalisées (en filtrant les champs autorisés)
       if (allowedFields[type as string]) {
         const allowed = allowedFields[type as string]
@@ -142,75 +137,75 @@ export default defineEventHandler(async (event) => {
       } else {
         Object.assign(itemData, data)
       }
-
       // Gestion spéciale de l'ordre pour éviter les conflits
       if (itemData.order !== undefined && parentId) {
         const desiredOrder = itemData.order
-        
-        // Trouver tous les éléments du même parent avec un ordre >= à l'ordre désiré
         const whereClause: any = {}
         if (parentFieldMap[type as string]) {
           whereClause[parentFieldMap[type as string]] = parentId
         }
         whereClause.order = { gte: desiredOrder }
-        
         const conflictingItems = await model.findMany({
           where: whereClause,
           orderBy: { order: 'asc' }
         })
-        
-        // Si des conflits existent, décaler tous les éléments de +1
         if (conflictingItems.length > 0) {
-          for (const conflictItem of conflictingItems) {
-            await model.update({
+          const updates = conflictingItems.map((conflictItem: typeof conflictingItems[0]) =>
+            model.update({
               where: { id: conflictItem.id },
               data: { order: conflictItem.order + 1 }
             })
-          }
-          console.log(`Décalé ${conflictingItems.length} éléments pour éviter les conflits d'ordre`)
+          )
+          await prisma.$transaction(updates)
+          console.log(`Décalé ${conflictingItems.length} éléments pour éviter les conflits d'ordre (transaction)`)
         }
       }
-
       // Ajouter les timestamps
       itemData.createdAt = new Date()
       itemData.updatedAt = new Date()
 
       // Si on crée un projet et qu'un templateProjectId est fourni, dupliquer ses todos
-      let createdProject = null
+      let createdProject: Awaited<ReturnType<typeof model.create>> | null = null
       if (type === 'project' && data.templateProjectId) {
         createdProject = await model.create({ data: itemData })
         // Récupérer les todos du projet template
         const templateTodos = await prisma.todo.findMany({ where: { projectId: data.templateProjectId }, orderBy: { order: 'asc' } })
-        // On va créer une map idTemplate -> idNew
-        const idMap = new Map()
-        // Première passe : créer tous les todos sans parentId
-        for (const todo of templateTodos) {
-          const { id, projectId, createdAt, updatedAt, ...todoData } = todo
-          // On retire parentId pour la première passe
-          const { parentId, ...rest } = todoData
-          const newTodo = await prisma.todo.create({
-            data: {
-              ...rest,
-              projectId: createdProject.id,
-              parentId: null, // temporairement
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          })
-          idMap.set(id, newTodo.id)
-        }
-        // Deuxième passe : mettre à jour les parentId
-        for (const todo of templateTodos) {
+        // Création des todos sans parentId
+        const todosToCreate = templateTodos.map((todo, idx) => {
+          const { id, projectId, createdAt, updatedAt, parentId, ...rest } = todo
+          return {
+            ...rest,
+            projectId: createdProject.id,
+            parentId: parentId ? parentId : null, // temporairement, sera corrigé ensuite
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        })
+        // Création en batch
+        await prisma.todo.createMany({ data: todosToCreate })
+        // Si des parentId existent, on doit les corriger (car les ids ont changé)
+        // On récupère les nouveaux todos pour faire la correspondance
+        const newTodos = await prisma.todo.findMany({ where: { projectId: createdProject.id } })
+        const idMap = new Map<string, string>()
+        templateTodos.forEach((todo, idx) => {
+          idMap.set(todo.id, newTodos[idx].id)
+        })
+        // Préparer les updates de parentId
+        const updates: Promise<any>[] = []
+        templateTodos.forEach((todo, idx) => {
           if (todo.parentId) {
             const newId = idMap.get(todo.id)
             const newParentId = idMap.get(todo.parentId)
             if (newId && newParentId) {
-              await prisma.todo.update({
+              updates.push(prisma.todo.update({
                 where: { id: newId },
                 data: { parentId: newParentId }
-              })
+              }))
             }
           }
+        })
+        if (updates.length > 0) {
+          await Promise.all(updates)
         }
         results.push(createdProject)
       } else if (type === 'project') {

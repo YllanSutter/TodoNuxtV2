@@ -21,16 +21,13 @@ export default defineEventHandler(async (event) => {
           where: parentId ? { projectId: parentId } : {},
           orderBy: { order: 'asc' }
         })
-        
-        // Réorganiser les ordres
-        const updatePromises = items.map((item, index) => 
-          prisma.todo.update({
-            where: { id: item.id },
-            data: { order: index + 1 }
-          })
-        )
-        
-        await Promise.all(updatePromises)
+        // Préparer les updates
+        const updatesTodo = items.map((item, index) => ({
+          id: item.id,
+          order: index + 1
+        }))
+        // Prisma ne supporte pas updateMany avec des ids différents, donc on fait un seul Promise.all
+        await Promise.all(updatesTodo.map(u => prisma.todo.update({ where: { id: u.id }, data: { order: u.order } })))
         break
         
       case 'project':
@@ -38,15 +35,11 @@ export default defineEventHandler(async (event) => {
           where: parentId ? { subgroupId: parentId } : {},
           orderBy: { order: 'asc' }
         })
-        
-        const projectUpdatePromises = items.map((item, index) => 
-          prisma.project.update({
-            where: { id: item.id },
-            data: { order: index + 1 }
-          })
-        )
-        
-        await Promise.all(projectUpdatePromises)
+        const updatesProject = items.map((item, index) => ({
+          id: item.id,
+          order: index + 1
+        }))
+        await Promise.all(updatesProject.map(u => prisma.project.update({ where: { id: u.id }, data: { order: u.order } })))
         break
         
       case 'subgroup':
@@ -54,30 +47,22 @@ export default defineEventHandler(async (event) => {
           where: parentId ? { groupId: parentId } : {},
           orderBy: { order: 'asc' }
         })
-        
-        const subgroupUpdatePromises = items.map((item, index) => 
-          prisma.subgroup.update({
-            where: { id: item.id },
-            data: { order: index + 1 }
-          })
-        )
-        
-        await Promise.all(subgroupUpdatePromises)
+        const updatesSubgroup = items.map((item, index) => ({
+          id: item.id,
+          order: index + 1
+        }))
+        await Promise.all(updatesSubgroup.map(u => prisma.subgroup.update({ where: { id: u.id }, data: { order: u.order } })))
         break
         
       case 'group':
         items = await prisma.group.findMany({
           orderBy: { order: 'asc' }
         })
-        
-        const groupUpdatePromises = items.map((item, index) => 
-          prisma.group.update({
-            where: { id: item.id },
-            data: { order: index + 1 }
-          })
-        )
-        
-        await Promise.all(groupUpdatePromises)
+        const updatesGroup = items.map((item, index) => ({
+          id: item.id,
+          order: index + 1
+        }))
+        await Promise.all(updatesGroup.map(u => prisma.group.update({ where: { id: u.id }, data: { order: u.order } })))
         break
         
       default:
