@@ -23,6 +23,19 @@ const error = ref(null)
 const project = ref(null)
 const selectedProjectId = ref(null)
 
+// Statuts possibles pour les projets
+const projectStatuses = ['ACTIVE', 'ARCHIVED', 'TEMPLATE']
+const selectedStatus = ref('ACTIVE')
+
+function selectStatus(status) {
+  selectedStatus.value = status
+}
+
+const filteredItems = computed(() => {
+  if (props.type !== 'project') return items.value
+  return items.value.filter(item => item.status === selectedStatus.value)
+})
+
 // Fonction pour charger les données
 async function loadData(type = props.type, parentId = props.parentId) {
   try {
@@ -117,11 +130,26 @@ watch([() => props.type, () => props.parentId], () => {
     <div>
       <!-- Affichage conditionnel selon le model -->
       <div v-if="model === 'card' && (type != 'todo' || items.length == 0)">
-        <h2 class="text-xl font-bold mt-3 capitalize mb-6">{{ type }}</h2>
+        <!-- Boutons de filtre de statut pour les projets -->
+        <div v-if="type === 'project'" class="flex gap-2 mt-4 mb-6 items-center">
+          <h2 class="text-xl font-bold capitalize mr-6">{{ type }}</h2>
+          <button
+            v-for="status in projectStatuses"
+            :key="status"
+            :class="[
+              'px-3 py-1 my-4 rounded-full border text-xs font-semibold transition-colors duration-500 hover:bg-blue-500 cursor-pointer',
+              selectedStatus === status ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/5 text-white border-white/10 hover:bg-blue-700/20'
+            ]"
+            @click="selectStatus(status)"
+          >
+            {{ status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() }}
+          </button>
+        </div>
         
-        <div v-if="!error && items && items.length > 0" class="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+
+        <div v-if="!error && filteredItems.length > 0" class="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
           <TachesItemCard 
-            v-for="item in items" 
+            v-for="item in filteredItems" 
             :key="item.id"
             :item="item"
             :model="model"
@@ -133,9 +161,7 @@ watch([() => props.type, () => props.parentId], () => {
           />
           <TachesAddElem :type="props.type" :parentId="props.parentId" @created="handleElementCreated"/>
         </div>
-        
         <TachesAddElem :type="props.type" :parentId="props.parentId" @created="handleElementCreated" v-else/>
-        
       </div>
 
       <div v-else-if="type == 'todo'" class="mt-10">
