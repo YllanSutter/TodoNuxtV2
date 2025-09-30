@@ -191,7 +191,7 @@ export default defineEventHandler(async (event) => {
           idMap.set(todo.id, newTodos[idx].id)
         })
         // Préparer les updates de parentId
-        const updates: Promise<any>[] = []
+        const updates: ReturnType<typeof prisma.todo.update>[] = []
         templateTodos.forEach((todo, idx) => {
           if (todo.parentId) {
             const newId = idMap.get(todo.id)
@@ -205,7 +205,7 @@ export default defineEventHandler(async (event) => {
           }
         })
         if (updates.length > 0) {
-          await Promise.all(updates)
+          await prisma.$transaction(updates)
         }
         results.push(createdProject)
       } else if (type === 'project') {

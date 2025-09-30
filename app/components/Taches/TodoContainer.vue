@@ -227,38 +227,16 @@ function findAllChildren(parentId, items = sortedItems.value) {
 async function handleToggleCollapse(itemId) {
   const item = sortedItems.value.find(i => i.id === itemId)
   if (!item) return
-  
   const newExpandedState = !item.expanded
-  const allChildren = findAllChildren(itemId)
-  
   try {
-    // Mettre à jour l'état expanded de l'élément parent
-    await $fetch(`/api/data/update`, {
+    // Appel à l'API transactionnelle pour collapse/expand parent + enfants
+    await $fetch('/api/data/collapse', {
       method: 'PUT',
       body: {
         id: itemId,
-        type: 'todo',
-        data: {
-          expanded: newExpandedState
-        }
+        expanded: newExpandedState
       }
     })
-    
-    // Mettre à jour la visibilité de tous les enfants
-    for (const child of allChildren) {
-      await $fetch(`/api/data/update`, {
-        method: 'PUT',
-        body: {
-          id: child.id,
-          type: 'todo',
-          data: {
-            visible: newExpandedState
-          }
-        }
-      })
-    }
-    
-    // Rafraîchir les données
     emit('refresh')
   } catch (error) {
     console.error('Erreur lors du toggle collapse:', error)
