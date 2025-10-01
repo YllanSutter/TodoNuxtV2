@@ -137,28 +137,35 @@ export default defineEventHandler(async (event) => {
       } else {
         Object.assign(itemData, data)
       }
-      // Gestion spéciale de l'ordre pour éviter les conflits
+      // Optimisation : si ajout à la fin, pas de recalcul d'ordre
       if (itemData.order !== undefined && parentId) {
-        const desiredOrder = itemData.order
-        const whereClause: any = {}
-        if (parentFieldMap[type as string]) {
-          whereClause[parentFieldMap[type as string]] = parentId
-        }
-        whereClause.order = { gte: desiredOrder }
-        const conflictingItems = await model.findMany({
-          where: whereClause,
-          orderBy: { order: 'asc' }
+        const parentField = parentFieldMap[type as string]
+        // Chercher le max order actuel
+        const maxOrderItem = await model.findFirst({
+          where: { [parentField]: parentId },
+          orderBy: { order: 'desc' }
         })
-        if (conflictingItems.length > 0) {
-          const updates = conflictingItems.map((conflictItem: typeof conflictingItems[0]) =>
-            model.update({
-              where: { id: conflictItem.id },
-              data: { order: conflictItem.order + 1 }
-            })
-          )
-          await prisma.$transaction(updates)
-          console.log(`Décalé ${conflictingItems.length} éléments pour éviter les conflits d'ordre (transaction)`)
+        if (maxOrderItem && itemData.order <= maxOrderItem.order) {
+          // Il y a conflit, on décale
+          const whereClause: any = {}
+          whereClause[parentField] = parentId
+          whereClause.order = { gte: itemData.order }
+          const conflictingItems = await model.findMany({
+            where: whereClause,
+            orderBy: { order: 'asc' }
+          })
+          if (conflictingItems.length > 0) {
+            const updates = conflictingItems.map((conflictItem: typeof conflictingItems[0]) =>
+              model.update({
+                where: { id: conflictItem.id },
+                data: { order: conflictItem.order + 1 }
+              })
+            )
+            await prisma.$transaction(updates)
+            console.log(`Décalé ${conflictingItems.length} éléments pour éviter les conflits d'ordre (transaction)`)
+          }
         }
+        // Sinon, on ajoute à la fin, pas de recalcul
       }
       // Ajouter les timestamps
       itemData.createdAt = new Date()
@@ -226,8 +233,14 @@ export default defineEventHandler(async (event) => {
         results.push(createdProject)
       } else {
         try {
-          const result = await model.create({ data: itemData })
-          results.push(result)
+          // Utilisation de createMany même pour un seul élément
+          const created = await model.createMany({ data: [itemData] })
+          // On récupère l'élément créé pour le retourner
+          const last = await model.findFirst({
+            where: itemData,
+            orderBy: { createdAt: 'desc' }
+          })
+          if (last) results.push(last)
         } catch (createError) {
           // Continuer avec les autres items même si un échoue
         }

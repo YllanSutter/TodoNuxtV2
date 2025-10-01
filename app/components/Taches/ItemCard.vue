@@ -23,6 +23,7 @@ const formData = ref({
   name: props.item.name || '',
   color: props.item.color || '',
   description: props.item.description || '',
+  status: props.item.status || 'ACTIVE',
   selectedTags: []
 })
 
@@ -55,10 +56,16 @@ watch(() => props.item.id, () => {
   // Popover state pour édition
   const isPopoverOpen = ref(false)
 
-  // Synchroniser les tags sélectionnés à l'ouverture du popup
+  // Synchroniser toutes les données du formulaire à l'ouverture du popup
   watch(isPopoverOpen, (open) => {
-    if (open && isProject.value) {
-      formData.value.selectedTags = projectTags.value.map(tag => tag.id)
+    if (open) {
+      formData.value.name = props.item.name || ''
+      formData.value.color = props.item.color || ''
+      formData.value.description = props.item.description || ''
+      formData.value.status = props.item.status || 'ACTIVE'
+      if (isProject.value) {
+        formData.value.selectedTags = projectTags.value.map(tag => tag.id)
+      }
     }
   })
 
@@ -106,21 +113,30 @@ watch(() => props.item.id, () => {
           type: props.type,
           id: props.item.id,
           data: {
-            name: props.item.name,
-            color: props.item.color,
-            status: props.item.status,
-            description: props.item.description,
+            name: formData.value.name,
+            color: formData.value.color,
+            status: formData.value.status,
+            description: formData.value.description,
             tagIds: isProject.value ? formData.value.selectedTags : undefined,
             subgroupId: isProject.value ? selectedSubgroup.value : props.item.subgroupId
           }
         }
       })
+      
+      // Mise à jour de l'item local après succès de l'API
+      props.item.name = formData.value.name
+      props.item.color = formData.value.color
+      props.item.status = formData.value.status
+      props.item.description = formData.value.description
+      
       // Mise à jour locale des tags affichés
       if (isProject.value) {
         projectTags.value = allTags.value.filter(tag => formData.value.selectedTags.includes(tag.id))
         props.item.subgroupId = selectedSubgroup.value
       }
-      // Feedback visuel
+      
+      // Fermer le popover et feedback visuel
+      isPopoverOpen.value = false
       showSaveSuccess.value = true
       setTimeout(() => { showSaveSuccess.value = false }, 1500)
       emit('updated', response)
@@ -206,23 +222,23 @@ const showSaveSuccess = ref(false)
           </div>
           <div class="grid grid-cols-3 items-center gap-4">
             <Label for="name">Nom</Label>
-            <Input id="name" v-model="item.name" type="text" :placeholder="`Nom du ${props.type}`"
+            <Input id="name" v-model="formData.name" type="text" :placeholder="`Nom du ${props.type}`"
               class="col-span-2 h-8" />
           </div>
           <div class="grid grid-cols-3 items-center gap-4">
             <Label for="description">Description</Label>
-            <Input id="description" v-model="item.description" type="text" :placeholder="`Description du ${props.type}`"
+            <Input id="description" v-model="formData.description" type="text" :placeholder="`Description du ${props.type}`"
               class="col-span-2 h-8" />
           </div>
           <div v-if="props.type !== 'todo'" class="grid grid-cols-3 items-center gap-4">
             <Label for="color">Couleur</Label>
-            <Input id="color" v-model="item.color" type="color" placeholder="#ff3366" class="col-span-2 h-8" />
+            <Input id="color" v-model="formData.color" type="color" placeholder="#ff3366" class="col-span-2 h-8" />
           </div>
           <!-- Tags pour les projets -->
 
           <div v-if="props.type === 'project'" class="grid grid-cols-3 items-center gap-4">
             <Label for="status">Status</Label>
-            <Select v-model="item.status">
+            <Select v-model="formData.status">
               <SelectTrigger class=" cursor-pointer lowercase">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
