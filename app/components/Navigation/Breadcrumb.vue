@@ -240,7 +240,7 @@ const getSubgroupsForGroup = (groupId) => {
 }
 
 const getProjectsForSubgroup = (subgroupId) => {
-  return hierarchyData.value.projects.filter(p => p.subgroupId === subgroupId)
+  return hierarchyData.value.projects.filter(p => p.subgroupId === subgroupId && p.status === 'ACTIVE')
 }
 
 // Vérifier si un élément est sélectionné
@@ -325,7 +325,7 @@ onMounted(async () => {
         <button
           v-if="getSubgroupsForGroup(group.id).length > 0"
           @click.stop="toggleGroup(group.id)"
-          class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-900 z-10 relative"
+          class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-950 border border-white/10 z-10 relative transition-all duration-500 cursor-pointer"
         >
           <svg 
             class="w-3 h-3 transition-transform"
@@ -356,7 +356,7 @@ onMounted(async () => {
             <button
               v-if="getProjectsForSubgroup(subgroup.id).length > 0"
               @click.stop="toggleSubgroup(subgroup.id)"
-              class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-900 z-10 relative"
+              class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-950 border border-white/10 z-10 relative transition-all duration-500 cursor-pointer"
             >
               <svg 
                 class="w-3 h-3 transition-transform"

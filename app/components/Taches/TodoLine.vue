@@ -31,7 +31,7 @@
       <button
         v-if="hasChildren"
         @click.stop="toggleCollapse"
-        class="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors mr-1"
+        class="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-200 transition-colors mr-1 border border-white/10 rounded-full hover:bg-gray-600/50"
         :title="isCollapsed ? 'Développer' : 'Réduire'"
       >
         <Icon 
