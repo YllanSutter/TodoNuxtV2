@@ -281,7 +281,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="mode === 'horizontal'" class="flex items-center gap-2 text-sm">
+  <div v-if="mode === 'horizontal'" class="flex items-center gap-2 text-sm mb-4">
     <!-- Mode horizontal - breadcrumb classique -->
     <template v-for="(item, index) in navigationPath" :key="`nav-${index}`">
       <button

@@ -25,3 +25,7 @@ logs
 
 /app/generated/prisma
 .continue/agents/new-agent.yaml
+
+# Development database
+prisma/dev.db
+dev.db

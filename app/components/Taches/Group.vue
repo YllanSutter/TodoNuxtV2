@@ -131,7 +131,7 @@ watch([() => props.type, () => props.parentId], () => {
       <!-- Affichage conditionnel selon le model -->
       <div v-if="model === 'card' && (type != 'todo' || items.length == 0)">
         <!-- Boutons de filtre de statut pour les projets -->
-        <div v-if="type === 'project'" class="flex gap-2 mt-4 mb-6 items-center">
+        <div v-if="type === 'project'" class="flex gap-2 mb-6 items-center">
           <h2 class="text-xl font-bold capitalize mr-6">{{ type }}</h2>
           <button
             v-for="status in projectStatuses"
