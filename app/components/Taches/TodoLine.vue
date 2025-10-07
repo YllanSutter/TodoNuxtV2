@@ -185,6 +185,18 @@ const showDeleteDialog = ref(false)
 
 // Watchers
 watch(() => props.item.content, (newContent) => {
+  // Ne pas écraser le contenu local si l'utilisateur est en train d'éditer
+  try {
+    const input = contentInput.value
+    const isFocused = input && document.activeElement === input
+    if (isFocused) {
+      // On est en train d'éditer : on ignore les mises à jour externes
+      return
+    }
+  } catch (e) {
+    // defensive: si l'accès au DOM échoue, on continue et on met à jour
+  }
+
   localContent.value = newContent || ''
 })
 

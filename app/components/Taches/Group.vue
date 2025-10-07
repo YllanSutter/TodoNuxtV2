@@ -166,7 +166,7 @@ watch([() => props.type, () => props.parentId], () => {
 
       <div v-else-if="type == 'todo'" class="mt-10">
         <!-- Affichage des infos du projet -->
-        <div v-if="project" class="mb-6 p-4 rounded bg-white/5 border border-white/10">
+        <div v-if="project" class="mb-6 p-4 rounded bg-muted/5 border border-white/10">
           <h2 class="text-lg font-bold mb-2">Projet : {{ project.name }}</h2>
           <p v-if="project.description" class="text-sm opacity-70 mb-1">{{ project.description }}</p>
           <div class="flex gap-4 text-xs opacity-50">

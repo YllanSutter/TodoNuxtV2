@@ -325,7 +325,7 @@ onMounted(async () => {
         <button
           v-if="getSubgroupsForGroup(group.id).length > 0"
           @click.stop="toggleGroup(group.id)"
-          class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-950 border border-white/10 z-10 relative transition-all duration-500 cursor-pointer"
+          class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-zinc-950 border border-white/10 z-10 relative transition-all duration-500 cursor-pointer"
         >
           <svg 
             class="w-3 h-3 transition-transform"
@@ -356,7 +356,7 @@ onMounted(async () => {
             <button
               v-if="getProjectsForSubgroup(subgroup.id).length > 0"
               @click.stop="toggleSubgroup(subgroup.id)"
-              class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-gray-950 border border-white/10 z-10 relative transition-all duration-500 cursor-pointer"
+              class="flex-shrink-0 p-1 hover:bg-gray-600/50 rounded-full bg-zinc-950 border border-white/10 z-10 relative transition-all duration-500 cursor-pointer"
             >
               <svg 
                 class="w-3 h-3 transition-transform"

@@ -21,11 +21,13 @@ export default defineEventHandler(async (event) => {
           where: parentId ? { projectId: parentId } : {},
           orderBy: { order: 'asc' }
         })
-        // Préparer les updates
-        const updatesTodo = items.map((item, index) =>
-          prisma.todo.update({ where: { id: item.id }, data: { order: index + 1 } })
-        )
-        await prisma.$transaction(updatesTodo)
+        if (items.length > 0) {
+          // Build a single SQL UPDATE ... CASE to set different order values in one query
+          const cases = items.map((item, index) => `WHEN '${item.id}' THEN ${index + 1}`).join(' ')
+          const ids = items.map(i => `'${i.id}'`).join(',')
+          const sql = `UPDATE "todos" SET "order" = CASE "id" ${cases} ELSE "order" END WHERE "id" IN (${ids});`
+          await prisma.$executeRawUnsafe(sql)
+        }
         break
         
       case 'project':
@@ -33,10 +35,12 @@ export default defineEventHandler(async (event) => {
           where: parentId ? { subgroupId: parentId } : {},
           orderBy: { order: 'asc' }
         })
-        const updatesProject = items.map((item, index) =>
-          prisma.project.update({ where: { id: item.id }, data: { order: index + 1 } })
-        )
-        await prisma.$transaction(updatesProject)
+        if (items.length > 0) {
+          const cases = items.map((item, index) => `WHEN '${item.id}' THEN ${index + 1}`).join(' ')
+          const ids = items.map(i => `'${i.id}'`).join(',')
+          const sql = `UPDATE "projects" SET "order" = CASE "id" ${cases} ELSE "order" END WHERE "id" IN (${ids});`
+          await prisma.$executeRawUnsafe(sql)
+        }
         break
         
       case 'subgroup':
@@ -44,20 +48,24 @@ export default defineEventHandler(async (event) => {
           where: parentId ? { groupId: parentId } : {},
           orderBy: { order: 'asc' }
         })
-        const updatesSubgroup = items.map((item, index) =>
-          prisma.subgroup.update({ where: { id: item.id }, data: { order: index + 1 } })
-        )
-        await prisma.$transaction(updatesSubgroup)
+        if (items.length > 0) {
+          const cases = items.map((item, index) => `WHEN '${item.id}' THEN ${index + 1}`).join(' ')
+          const ids = items.map(i => `'${i.id}'`).join(',')
+          const sql = `UPDATE "subgroups" SET "order" = CASE "id" ${cases} ELSE "order" END WHERE "id" IN (${ids});`
+          await prisma.$executeRawUnsafe(sql)
+        }
         break
         
       case 'group':
         items = await prisma.group.findMany({
           orderBy: { order: 'asc' }
         })
-        const updatesGroup = items.map((item, index) =>
-          prisma.group.update({ where: { id: item.id }, data: { order: index + 1 } })
-        )
-        await prisma.$transaction(updatesGroup)
+        if (items.length > 0) {
+          const cases = items.map((item, index) => `WHEN '${item.id}' THEN ${index + 1}`).join(' ')
+          const ids = items.map(i => `'${i.id}'`).join(',')
+          const sql = `UPDATE "groups" SET "order" = CASE "id" ${cases} ELSE "order" END WHERE "id" IN (${ids});`
+          await prisma.$executeRawUnsafe(sql)
+        }
         break
         
       default:
