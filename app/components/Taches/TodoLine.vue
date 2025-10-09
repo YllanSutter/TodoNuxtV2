@@ -311,6 +311,20 @@ function handleKeyDown(event) {
   switch (event.key) {
     case 'Enter':
       event.preventDefault()
+      // Handle split if cursor not at end or there's a selection
+      const input = contentInput.value
+      if (input) {
+        const start = input.selectionStart
+        const end = input.selectionEnd
+        const value = localContent.value || ''
+        if (start !== null && end !== null && (start < value.length || start !== end)) {
+          // Split mode
+          const left = value.slice(0, start)
+          const right = value.slice(end)
+          createNewLine({ split: true, leftText: left, rightText: right })
+          break
+        }
+      }
       createNewLine()
       break
       
@@ -383,47 +397,57 @@ function handleKeyDown(event) {
   }
 }
 
-async function createNewLine() {
+async function createNewLine(opts = {}) {
+  const { split = false, leftText = '', rightText = '' } = opts
   try {
     // Calculer l'ordre pour insérer après la tâche actuelle
-    // L'API gérera automatiquement le décalage des éléments existants
     const newOrder = Math.floor((props.item.order || 0)) + 1
     const currentLevel = props.item.level || 0
-    
-    // Calculer le parentId pour le nouvel élément (parentId de todo, pas de projet)
-    let newTodoParentId = null // Par défaut, null pour les éléments de niveau 0
-    
+
+    let newTodoParentId = null
     if (currentLevel > 0) {
-      // Si l'élément courant a un niveau > 0, le nouvel élément aura le même parent todo
       newTodoParentId = props.item.parentId
     }
-    
+
+    // If split, update current item first with leftText (optimistic)
+    if (split) {
+      // Update local content immediately so user sees the left part kept
+      localContent.value = leftText
+      // Fire server update
+      await updateItem({ content: leftText })
+    }
+
     const newTodo = await $fetch('/api/data/add', {
       method: 'POST',
       body: {
         type: 'todo',
-        parentId: props.parentId, // Parent du projet
+        parentId: props.parentId,
         count: 1,
         data: {
-          content: '',
+          content: split ? rightText : '',
           type: 'TASK',
           level: currentLevel,
           order: newOrder,
-          parentId: newTodoParentId // Parent de la todo (null pour niveau 0, ou ID d'un autre todo)
+          parentId: newTodoParentId
         }
       }
     })
-    
-    emit('create-new-line', newTodo.data[0])
-    
+
+    const created = newTodo.data ? newTodo.data[0] : newTodo
+    emit('create-new-line', created)
+
     // Focus on the new line after a short delay
     await nextTick()
     setTimeout(() => {
-      const newLineInput = document.querySelector(`input[data-id="${newTodo.data[0].id}"]`)
+      const newLineInput = document.querySelector(`input[data-id="${created.id}"]`)
       if (newLineInput) {
         newLineInput.focus()
+        // Place cursor at start
+        newLineInput.selectionStart = 0
+        newLineInput.selectionEnd = 0
       }
     }, 100)
+    return created
   } catch (error) {
     console.error('Erreur lors de la création:', error)
   }
